@@ -945,6 +945,16 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
               />
             </div>
           )}
+
+          {/* ── 底部关闭按钮（始终显示） ────────────────────────── */}
+          <div className="flex justify-center pb-1 flex-shrink-0 border-t border-white/5 pt-1">
+            <button
+              onClick={onClose}
+              className="px-6 py-1.5 rounded-full text-[10px] text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
+            >
+              关闭手机 ✕
+            </button>
+          </div>
         </div>
 
         {/* 手机边框装饰 */}

@@ -44,6 +44,27 @@ const SCENE_CHOICES: Record<string, string[]> = {
   alley_night: ['调查涂鸦', '追踪声音', '查看垃圾桶', '离开小巷'],
 };
 
+// ─── 任务/引导系统 ────────────────────────────────────────────
+interface QuestHint {
+  id: string;
+  dayMin: number;
+  dayMax: number;
+  title: string;
+  description: string;
+  hint: string;
+  priority: number;
+}
+
+const QUEST_HINTS: QuestHint[] = [
+  { id: 'q_start', dayMin: 1, dayMax: 1, title: '第一天', description: '你刚刚来到这座陌生的城市。一切看起来都很正常，但你隐约感到有些不对劲。', hint: '先检查房间，然后出门探索小镇吧。', priority: 1 },
+  { id: 'q_town', dayMin: 1, dayMax: 2, title: '探索小镇', description: '小镇的中心广场看起来很普通，但有些细节让你在意。', hint: '去神社看看，那里也许有人能解答你的疑惑。', priority: 2 },
+  { id: 'q_shrine', dayMin: 2, dayMax: 3, title: '神社的秘密', description: '神社的巫女狐鈴似乎知道些什么。她的话语中藏着暗示。', hint: '与狐鈴对话，了解这座城市的真相。', priority: 3 },
+  { id: 'q_hospital', dayMin: 3, dayMax: 5, title: '医院的异样', description: '医院的夜晚医生血月举止优雅但可疑。她身上有血的气味。', hint: '前往医院调查，那里可能藏着关键线索。', priority: 4 },
+  { id: 'q_school', dayMin: 4, dayMax: 6, title: '学校的线索', description: '放学后的校园空无一人。图书馆里可能留有重要信息。', hint: '去学校图书馆找找，那里可能有前任调查者留下的笔记。', priority: 5 },
+  { id: 'q_alley', dayMin: 5, dayMax: 7, title: '小巷深处', description: '夜晚的小巷里有什么东西在移动。魅魔酒吧的老板可能知道内情。', hint: '天黑后去小巷探索。注意那些发光的涂鸦。', priority: 6 },
+  { id: 'q_final', dayMin: 7, dayMax: 99, title: '真相逼近', description: '你收集的线索已经足够多了。是时候面对这座城市的真相。', hint: '前往市政大厅。市长龙娘掌握着改写现实的关键。', priority: 7 },
+];
+
 const ExplorationScreen: React.FC = () => {
   const { state, dispatch } = useGame();
   const advanceTime = useAdvanceTime();
@@ -396,6 +417,26 @@ const ExplorationScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── 任务提示面板 ───────────────────────────────────────── */}
+      {showActions && (() => {
+        const activeQuest = QUEST_HINTS
+          .filter(q => day >= q.dayMin && day <= q.dayMax)
+          .sort((a, b) => a.priority - b.priority)[0];
+        if (!activeQuest) return null;
+        return (
+          <div className="px-4 mb-2">
+            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-900/30 to-blue-900/20 border border-purple-500/20">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] text-purple-300/70 tracking-wider">📋 任务提示</span>
+                <span className="text-[9px] text-purple-400/50">D{activeQuest.dayMin}–D{activeQuest.dayMax}</span>
+              </div>
+              <p className="text-xs text-purple-200/90 font-medium mb-0.5">{activeQuest.title}</p>
+              <p className="text-[10px] text-gray-400 leading-relaxed">{activeQuest.hint}</p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Quick action bar */}
       {showActions && (

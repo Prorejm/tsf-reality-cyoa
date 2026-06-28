@@ -22,6 +22,16 @@ export type ScreenId =
   | 'title' | 'exploration' | 'dialogue' | 'observation' | 'puzzle'
   | 'journal' | 'inventory' | 'calendar' | 'map' | 'affinity' | 'ending' | 'phone'
 
+// Storyline: scene changes based on day progression
+const STORY_SCENES: Record<number, string> = {
+  1: 'home_bedroom',
+  2: 'town_center',
+  3: 'shrine',
+  4: 'hospital',
+  5: 'school',
+  6: 'alley_night',
+};
+
 // Maps GameAction SET_FLAG _screen values to ScreenId
 function detectScreenFromFlags(flags: Record<string, any>): ScreenId | null {
   const target = flags['_screen']
@@ -88,6 +98,27 @@ function AppShell() {
       }
     }
   }, [state.currentDay, state.currentPeriod, screen, prevScreen])
+
+  // Storyline: auto-advance scene based on day
+  useEffect(() => {
+    if (screen !== 'exploration') return;
+    const targetScene = STORY_SCENES[state.currentDay];
+    if (targetScene && state.currentScene !== targetScene) {
+      dispatch({ type: 'SET_SCENE', payload: targetScene });
+    }
+  }, [state.currentDay, state.currentScene, screen, dispatch]);
+
+  // Bad End detection (erosion ≥ 100)
+  const [badEndTriggered, setBadEndTriggered] = useState(false);
+  useEffect(() => {
+    if (state.erosionLevel >= 100 && !badEndTriggered && screen === 'exploration') {
+      setBadEndTriggered(true);
+      dispatch({ type: 'ADD_BAD_END', payload: { id: 'bad_end_erosion', name: '侵蚀殆尽', triggerDay: state.currentDay, description: '你的意识被"常识"完全改写。你不再记得自己曾经是谁。现在你只是这座城市的一个普通居民。永远。' } });
+      setTimeout(() => {
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'ending' } });
+      }, 2000);
+    }
+  }, [state.erosionLevel, screen, badEndTriggered, dispatch]);
 
   // Reality break
   const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({ active: false, intensity: 'mild' })
