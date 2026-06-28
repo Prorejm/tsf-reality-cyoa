@@ -1,20 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
 import { GameProvider, useGame } from '@/game/engine/GameContext'
-import { type GameState } from '@/game/engine/types'
 
-// Screens
-import TitleScreen from '@/screens/TitleScreen'
-import ExplorationScreen from '@/screens/ExplorationScreen'
-import DialogueScreen from '@/screens/DialogueScreen'
-import ObservationScreen from '@/screens/ObservationScreen'
-import PuzzleScreen from '@/screens/PuzzleScreen'
-import JournalScreen from '@/screens/JournalScreen'
-import InventoryScreen from '@/screens/InventoryScreen'
-import CalendarScreen from '@/screens/CalendarScreen'
-import MapScreen from '@/screens/MapScreen'
-import AffinityScreen from '@/screens/AffinityScreen'
-import EndingScreen from '@/screens/EndingScreen'
-import PhoneScreen from '@/screens/PhoneScreen'
+// ===== 懒加载屏幕组件 =====
+const TitleScreen = lazy(() => import('@/screens/TitleScreen'))
+const ExplorationScreen = lazy(() => import('@/screens/ExplorationScreen'))
+const DialogueScreen = lazy(() => import('@/screens/DialogueScreen'))
+const ObservationScreen = lazy(() => import('@/screens/ObservationScreen'))
+const PuzzleScreen = lazy(() => import('@/screens/PuzzleScreen'))
+const JournalScreen = lazy(() => import('@/screens/JournalScreen'))
+const InventoryScreen = lazy(() => import('@/screens/InventoryScreen'))
+const CalendarScreen = lazy(() => import('@/screens/CalendarScreen'))
+const MapScreen = lazy(() => import('@/screens/MapScreen'))
+const AffinityScreen = lazy(() => import('@/screens/AffinityScreen'))
+const EndingScreen = lazy(() => import('@/screens/EndingScreen'))
+const PhoneScreen = lazy(() => import('@/screens/PhoneScreen'))
 
 import { DayTransition } from '@/components/DayTransition'
 import { RealityBreak } from '@/components/RealityBreak'
@@ -34,17 +33,18 @@ type ScreenId =
   | 'ending'
   | 'phone'
 
-interface ScreenTransition {
-  current: ScreenId
-  previous: ScreenId | null
-  isTransitioning: boolean
+// ===== 加载占位 =====
+function ScreenFallback() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-8 h-8 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" />
+    </div>
+  )
 }
 
-// ========== Game Router ==========
-function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: ScreenId, data?: any) => void }) {
+// ===== 游戏路由（懒加载） =====
+function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: ScreenId) => void }) {
   const { state } = useGame()
-
-  const screenProps = { onNavigate, state }
 
   switch (screen) {
     case 'title':
@@ -76,89 +76,57 @@ function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: 
   }
 }
 
-// ========== Main App Shell ==========
+// ===== 主外壳 =====
 function AppShell() {
-  const { state, dispatch } = useGame()
+  const { state } = useGame()
   const [screen, setScreen] = useState<ScreenId>('title')
-  const [transition, setTransition] = useState<ScreenTransition>({
-    current: 'title',
-    previous: null,
-    isTransitioning: false,
-  })
 
-  // Day transition effect
-  const [dayTransition, setDayTransition] = useState<{
-    active: boolean
-    day: number
-    specialDate?: string
-  }>({ active: false, day: 0 })
-
-  // Reality break effect
-  const [realityBreak, setRealityBreak] = useState<{
-    active: boolean
-    intensity: 'mild' | 'moderate' | 'severe'
-  }>({ active: false, intensity: 'mild' })
-
-  // Screen navigation with transition
-  const navigate = useCallback((target: ScreenId, _data?: any) => {
-    setTransition(prev => ({
-      current: target,
-      previous: prev.current,
-      isTransitioning: false,
-    }))
+  const navigate = useCallback((target: ScreenId) => {
     setScreen(target)
   }, [])
 
-  // Detect day change from game state
+  // 天数切换动画
+  const [dayTrans, setDayTrans] = useState<{ active: boolean; day: number; specialDate?: string }>({
+    active: false, day: 0,
+  })
+
+  // 侵蚀 ≥90 → BAD END 触发器
+  const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({
+    active: false, intensity: 'mild',
+  })
+
+  // 监听天数变化
   useEffect(() => {
-    if (state.time.day > 0 && transition.current === 'exploration') {
-      // Check if day just changed (periodAction reset can indicate this)
-      if (state.time.periodAction === 0 && state.time.period === 'morning') {
-        setDayTransition({
-          active: true,
-          day: state.time.day,
-          specialDate: state.time.specialDate ?? undefined,
-        })
-      }
+    if (state.time.day > 0 && screen === 'exploration' && state.time.period === 'morning' && state.time.periodAction === 0) {
+      setDayTrans({ active: true, day: state.time.day, specialDate: state.time.specialDate ?? undefined })
     }
-  }, [state.time.day, state.time.period, state.time.periodAction, transition.current])
+  }, [state.time.day, state.time.period, state.time.periodAction, screen])
 
-  // Handle day transition complete
-  const handleDayTransitionComplete = useCallback(() => {
-    setDayTransition({ active: false, day: 0 })
-  }, [])
-
-  // Check for bad end trigger
+  // BAD END 触发
   useEffect(() => {
     if (state.cognition.erosionLevel >= 90 && screen === 'exploration') {
-      // Trigger bad end flow - will go through narrative
       setRealityBreak({ active: true, intensity: 'severe' })
     }
   }, [state.cognition.erosionLevel, screen])
 
-  // Determine if perception toggle should show
   const showPerceptionToggle = screen === 'exploration' || screen === 'observation' || screen === 'dialogue'
 
   return (
     <div className="relative min-h-screen">
-      {/* Main game content */}
-      <div className={`screen-transition ${!transition.isTransitioning ? 'screen-active' : 'screen-enter'}`}>
+      <Suspense fallback={<ScreenFallback />}>
         <GameRouter screen={screen} onNavigate={navigate} />
-      </div>
+      </Suspense>
 
-      {/* Perception toggle (shown on main gameplay screens) */}
       {showPerceptionToggle && <PerceptionToggle />}
 
-      {/* Day transition overlay */}
-      {dayTransition.active && (
+      {dayTrans.active && (
         <DayTransition
-          day={dayTransition.day}
-          specialDate={dayTransition.specialDate}
-          onComplete={handleDayTransitionComplete}
+          day={dayTrans.day}
+          specialDate={dayTrans.specialDate}
+          onComplete={() => setDayTrans({ active: false, day: 0 })}
         />
       )}
 
-      {/* Reality break effect */}
       {realityBreak.active && (
         <RealityBreak
           intensity={realityBreak.intensity}
@@ -169,7 +137,7 @@ function AppShell() {
   )
 }
 
-// ========== Root App ==========
+// ===== 根组件 =====
 export default function App() {
   return (
     <GameProvider>

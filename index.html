@@ -2,16 +2,128 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/tsf-reality-cyoa/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>常識改変の街 — TSF Reality CYOA</title>
-    <!-- 中文字体：正文用 Noto Sans SC，手写感用 ZCOOL XiaoWei，标题用 Ma Shan Zheng -->
+
+    <!-- 预加载关键字体（swap 策略避免阻塞渲染） -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;700;900&family=ZCOOL+XiaoWei&family=ZCOOL+QingKe+HuangYou&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- 内联加载动画样式 — 在 JS 加载前就显示 -->
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+      
+      #splash-screen {
+        position: fixed; inset: 0; z-index: 999999;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        color: rgba(255,255,255,0.9);
+        font-family: 'Noto Sans SC', sans-serif;
+        transition: opacity 0.6s ease-out;
+      }
+      #splash-screen.fade-out { opacity: 0; pointer-events: none; }
+      
+      #splash-title {
+        font-size: clamp(1.8rem, 5vw, 3.5rem);
+        font-weight: 700;
+        background: linear-gradient(135deg, #f472b6, #fb923c, #fbbf24);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 1rem;
+        letter-spacing: 0.1em;
+      }
+      #splash-sub {
+        font-size: clamp(0.8rem, 2vw, 1.1rem);
+        color: rgba(255,255,255,0.5);
+        letter-spacing: 0.3em;
+        margin-bottom: 2.5rem;
+      }
+      #splash-spinner {
+        width: 40px; height: 40px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: #f472b6;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      
+      #splash-error {
+        display: none; margin-top: 1.5rem;
+        padding: 1rem 1.5rem;
+        background: rgba(255,50,50,0.15);
+        border: 1px solid rgba(255,50,50,0.3);
+        border-radius: 8px;
+        color: #fca5a5;
+        font-size: 0.85rem;
+        max-width: 400px;
+        text-align: center;
+        line-height: 1.6;
+      }
+      #splash-error .retry-btn {
+        display: inline-block; margin-top: 0.8rem;
+        padding: 0.5rem 1.5rem;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 6px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      #splash-error .retry-btn:hover { background: rgba(255,255,255,0.2); }
+    </style>
   </head>
   <body>
+    <!-- 启动画面（JS 加载前的占位） -->
+    <div id="splash-screen">
+      <div id="splash-title">常識改変の街</div>
+      <div id="splash-sub">TSF · Reality · CYOA</div>
+      <div id="splash-spinner"></div>
+      <div id="splash-error">
+        <div>⚠️ ゲームの読み込みに失敗しました</div>
+        <div style="font-size:0.75rem;margin-top:0.3rem;color:rgba(255,255,255,0.5);">
+          ページを再読み込みしてください
+        </div>
+        <button class="retry-btn" onclick="location.reload()">再読み込み</button>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- 错误捕获：JS 加载失败时显示错误界面 -->
+    <script>
+      window.addEventListener('error', function(e) {
+        var splash = document.getElementById('splash-screen');
+        var spinner = document.getElementById('splash-spinner');
+        var errorBox = document.getElementById('splash-error');
+        if (splash && spinner && errorBox) {
+          spinner.style.display = 'none';
+          errorBox.style.display = 'block';
+        }
+      }, true);
+      
+      // 设置超时：10秒后如果 JS 还没加载完成，提示用户
+      setTimeout(function() {
+        var root = document.getElementById('root');
+        var splash = document.getElementById('splash-screen');
+        if (root && root.children.length === 0 && splash && splash.style.opacity !== '0') {
+          var spinner = document.getElementById('splash-spinner');
+          var errorBox = document.getElementById('splash-error');
+          if (spinner) spinner.style.display = 'none';
+          if (errorBox) {
+            errorBox.style.display = 'block';
+            errorBox.innerHTML = 
+              '<div>⏳ 読み込みに時間がかかっています</div>' +
+              '<div style="font-size:0.75rem;margin-top:0.3rem;color:rgba(255,255,255,0.5);">' +
+              'ネットワーク接続を確認してください</div>' +
+              '<button class="retry-btn" onclick="location.reload()">再試行</button>';
+          }
+        }
+      }, 10000);
+    </script>
   </body>
 </html>
