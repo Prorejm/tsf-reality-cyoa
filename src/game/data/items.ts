@@ -72,6 +72,48 @@ const MISC_ITEMS: GameItemDef[] = [
     type: 'equipment', description: '神社的护身符。能减轻"常识改写"的影响。', usage: '侵蚀抵抗 +3',
     icon: '🪬', quantity: 1, maxStack: 1, usable: true, sellPrice: 30,
   },
+
+  // === TSF TRANSFORMATION ITEMS ===
+  {
+    id: 'potion_gender', name: 'Gender Shift Potion', nameCN: '性别转换药水',
+    type: 'tsf_trigger', description: '一瓶泛着粉色光芒的药水。标签上写着"小心使用"', usage: 'TSF: 性别转换',
+    icon: '🧪', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_gender'],
+  },
+  {
+    id: 'potion_age', name: 'Age Shift Potion', nameCN: '年龄转换药水',
+    type: 'tsf_trigger', description: '一瓶泛着蓝色光芒的药水。气味像是童年夏天的记忆。', usage: 'TSF: 年龄变化',
+    icon: '🧪', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_age'],
+  },
+  {
+    id: 'pen_memory', name: 'Memory Rewrite Pen', nameCN: '记忆改写笔',
+    type: 'tsf_trigger', description: '一支看似普通的钢笔。用它在纸上写字，那些文字就会变成"现实"。', usage: 'TSF: 记忆改写',
+    icon: '🖊️', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_memory'],
+  },
+  {
+    id: 'card_identity', name: 'Identity Card', nameCN: '空白身份卡',
+    type: 'tsf_trigger', description: '一张空白的身份卡。你可以在上面写下任何身份，然后它就会变成真的。', usage: 'TSF: 身份改写',
+    icon: '🪪', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_identity'],
+  },
+  {
+    id: 'perfume_charm', name: 'Charm Perfume', nameCN: '魅惑香水',
+    type: 'tsf_trigger', description: '一瓶散发着诱人香气的香水。喷上后周围的人会对你更加……友善。', usage: 'TSF: 魅力提升',
+    icon: '🧴', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_charm'],
+  },
+  {
+    id: 'collar_change', name: 'Reality Collar', nameCN: '现实改写项圈',
+    type: 'tsf_trigger', description: '戴上它后，你说出的话会成为"现实"。项圈上刻着古文字。', usage: 'TSF: 现实改写',
+    icon: '📿', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_reality'],
+  },
+  {
+    id: 'earphones_hypno', name: 'Hypnosis Earphones', nameCN: '催眠耳机',
+    type: 'tsf_trigger', description: '一副时尚的无线耳机。播放的音频含有潜意识暗示——对你同样有效。', usage: 'TSF: 自我催眠',
+    icon: '🎧', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_hypnosis'],
+  },
+  {
+    id: 'book_reality', name: 'Reality Editing Book', nameCN: '现实编辑手册',
+    type: 'tsf_trigger', description: '一本空白的书。你在上面写的每一句话，都会在现实中发生。', usage: 'TSF: 现实编辑',
+    icon: '📕', quantity: 1, maxStack: 1, usable: true, sellPrice: 0, flags: ['tsf_edit'],
+  },
 ];
 
 export function getInitialItems(): GameItemDef[] {

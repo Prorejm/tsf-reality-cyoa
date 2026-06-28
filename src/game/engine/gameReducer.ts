@@ -473,6 +473,38 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       };
     }
 
+    // ── Item Usage ───────────────────────────────────────────────
+    case 'USE_ITEM': {
+      const itemId = typeof action.payload === 'string' ? action.payload : action.payload.itemId;
+      const idx = state.inventory.findIndex((i: any) => i.id === itemId);
+      if (idx === -1) return state;
+      const item = state.inventory[idx];
+
+      // TSF item effects based on type
+      let newState = { ...state };
+
+      // All TSF items increase erosion + awareness
+      if (item.flags?.some((f: string) => f.startsWith('tsf_'))) {
+        newState.erosionLevel = Math.min(100, newState.erosionLevel + 8);
+        newState.awarenessLevel = Math.min(100, newState.awarenessLevel + 5);
+        newState.narrativeLog = [...newState.narrativeLog, {
+          type: 'system', content: `使用了 ${item.nameCN || item.name} — 现实开始扭曲……`,
+          day: state.currentDay, period: state.currentPeriod, timestamp: Date.now(),
+        }];
+      }
+
+      // Remove consumed item
+      if (item.quantity > 1) {
+        const inv = [...newState.inventory];
+        inv[idx] = { ...inv[idx], quantity: inv[idx].quantity - 1 };
+        newState.inventory = inv;
+      } else {
+        newState.inventory = newState.inventory.filter((_: any, i: number) => i !== idx);
+      }
+
+      return newState;
+    }
+
     // ── Perception ─────────────────────────────────────────────────
     case 'SWITCH_PERCEPTION': {
       const nextMode =

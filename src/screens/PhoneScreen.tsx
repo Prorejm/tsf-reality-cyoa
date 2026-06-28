@@ -25,7 +25,8 @@ type AppId =
   | 'gallery'
   | 'settings'
   | 'clock'
-  | 'messages';
+  | 'messages'
+  | 'appstore';
 
 interface AppDefinition {
   id: AppId;
@@ -44,6 +45,7 @@ const APPS: AppDefinition[] = [
   { id: 'settings', name: '设置', icon: '⚙️', gradient: 'from-gray-500 to-slate-700' },
   { id: 'clock', name: '时钟', icon: '🕐', gradient: 'from-blue-500 to-indigo-700' },
   { id: 'messages', name: '信息', icon: '💬', gradient: 'from-teal-500 to-cyan-700', badge: 2 },
+  { id: 'appstore', name: '应用商店', icon: '📲', gradient: 'from-blue-600 to-blue-800' },
 ];
 
 // ─── 场景数据（用于地图应用） ──────────────────────────────────────
@@ -130,6 +132,11 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
   const [selectedBestiary, setSelectedBestiary] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageData[]>(DEFAULT_MESSAGES);
+  const [appStoreInstalling, setAppStoreInstalling] = useState<string | null>(null);
+  const [ownedApps, setOwnedApps] = useState<string[]>(() => {
+    const stored = state.flags?.['_phone_owned_apps'];
+    return Array.isArray(stored) ? stored as string[] : [];
+  });
 
   const currentDay = state.currentDay ?? 1;
   const currentPeriod = state.currentPeriod ?? 'morning';
@@ -193,6 +200,26 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
     () => messages.filter((m) => !m.read).length,
     [messages],
   );
+
+  // ── 安装应用商店应用 ─────────────────────────────────────────────
+  const handleInstallApp = useCallback((appId: string, tsfItem?: string) => {
+    setAppStoreInstalling(appId);
+    setTimeout(() => {
+      const newOwned = [...ownedApps, appId];
+      setOwnedApps(newOwned);
+      dispatch({ type: 'SET_FLAG', payload: { key: '_phone_owned_apps', value: newOwned } });
+      if (tsfItem) {
+        const itemMap: Record<string, any> = {
+          earphones_hypno: { id: 'earphones_hypno', name: 'Hypnosis Earphones', nameCN: '催眠耳机', type: 'tsf_trigger', quantity: 1, maxStack: 1, usable: true, description: '一副时尚的无线耳机。播放的音频含有潜意识暗示——对你同样有效。', icon: '🎧', flags: ['tsf_hypnosis'] },
+          book_reality: { id: 'book_reality', name: 'Reality Editing Book', nameCN: '现实编辑手册', type: 'tsf_trigger', quantity: 1, maxStack: 1, usable: true, description: '一本空白的书。你在上面写的每一句话，都会在现实中发生。', icon: '📕', flags: ['tsf_edit'] },
+          card_identity: { id: 'card_identity', name: 'Identity Card', nameCN: '空白身份卡', type: 'tsf_trigger', quantity: 1, maxStack: 1, usable: true, description: '一张空白的身份卡。你可以在上面写下任何身份，然后它就会变成真的。', icon: '🪪', flags: ['tsf_identity'] },
+          perfume_charm: { id: 'perfume_charm', name: 'Charm Perfume', nameCN: '魅惑香水', type: 'tsf_trigger', quantity: 1, maxStack: 1, usable: true, description: '一瓶散发着诱人香气的香水。喷上后周围的人会对你更加友善。', icon: '🧴', flags: ['tsf_charm'] },
+        };
+        if (itemMap[tsfItem]) dispatch({ type: 'ADD_ITEM', payload: itemMap[tsfItem] });
+      }
+      setAppStoreInstalling(null);
+    }, 1500);
+  }, [dispatch, ownedApps]);
 
   // ====================================================================
   // 应用子视图渲染
@@ -659,6 +686,98 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
     </div>
   );
 
+  // ── 应用商店 ──────────────────────────────────────────────────────
+  const renderAppStore = () => {
+    interface StoreApp {
+      id: string;
+      name: string;
+      icon: string;
+      category: '催眠' | '现实改变' | '认知增强' | '娱乐';
+      description: string;
+      effect: string;
+      price: number;
+      tsfItem?: string;
+    }
+
+    const STORE_APPS: StoreApp[] = [
+      { id: 'hypno_basic', name: '基础催眠', icon: '🌀', category: '催眠',
+        description: '一款基础催眠音频应用。通过双耳节拍诱导轻度催眠状态。',
+        effect: '使用后认知+3，侵蚀+2，可在探索中使用',
+        price: 0 },
+      { id: 'hypno_advanced', name: '深度催眠', icon: '🌙', category: '催眠',
+        description: '高级催眠程序。包含潜意识暗示和记忆引导功能。',
+        effect: '使用后认知+8，侵蚀+5，可能触发意识改变',
+        price: 500, tsfItem: 'earphones_hypno' },
+      { id: 'reality_editor', name: '现实编辑器', icon: '🔮', category: '现实改变',
+        description: '一个声称能"编辑周围现实"的应用。界面上只有一个输入框和一个确认按钮。',
+        effect: 'TSF触发: 添加现实编辑手册到背包',
+        price: 1000, tsfItem: 'book_reality' },
+      { id: 'identity_changer', name: '身份改写器', icon: '🆔', category: '现实改变',
+        description: '输入你想成为的人的名字，应用会"更新"你的身份记录。',
+        effect: 'TSF触发: 添加空白身份卡到背包',
+        price: 800, tsfItem: 'card_identity' },
+      { id: 'memory_viewer', name: '记忆浏览器', icon: '🧠', category: '认知增强',
+        description: '一个可以"浏览"自己记忆的可视化工具。还能发现被改写的记忆。',
+        effect: '使用后认知+10，可能发现隐藏线索',
+        price: 300 },
+      { id: 'perception_boost', name: '感知增强器', icon: '👁️', category: '认知增强',
+        description: '通过屏幕频闪刺激潜意识，暂时提升对"异常"的感知力。',
+        effect: '使用后认知+15（持续3回合），侵蚀+3',
+        price: 200 },
+      { id: 'charm_simulator', name: '魅力增幅器', icon: '💝', category: '娱乐',
+        description: '一款通过屏幕色温调节来影响周围人对你印象的应用。',
+        effect: 'NPC好感度获取量+20%，持续到次日',
+        price: 150, tsfItem: 'perfume_charm' },
+      { id: 'voice_changer', name: '声线转换器', icon: '🎤', category: '娱乐',
+        description: '实时转换你的声音。但有些用户报告说转换效果"过于真实"。',
+        effect: 'TSF触发: 声线可能永久改变',
+        price: 400 },
+    ];
+
+    return (
+      <div className="flex flex-col h-full">
+        <div className="p-2 border-b border-white/5">
+          <span className="text-[9px] text-gray-500">可下载应用 ({STORE_APPS.filter(a => !ownedApps.includes(a.id)).length} 个新应用)</span>
+        </div>
+        <div className="flex-1 overflow-y-auto p-2 space-y-2">
+          {STORE_APPS.map((app) => {
+            const isOwned = ownedApps.includes(app.id);
+            const isInstalling = appStoreInstalling === app.id;
+            return (
+              <div key={app.id} className="bg-gray-900/60 border border-white/5 rounded-lg p-2.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/40 to-purple-600/40 flex items-center justify-center text-lg flex-shrink-0">{app.icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs text-gray-200 font-medium">{app.name}</h4>
+                      <span className="text-[9px] text-gray-500">{app.category}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-2">{app.description}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[9px] text-purple-300/60">{app.effect}</span>
+                      {isOwned ? (
+                        <span className="text-[9px] text-green-400/60">已拥有 ✓</span>
+                      ) : isInstalling ? (
+                        <span className="text-[9px] text-blue-400 animate-pulse">安装中...</span>
+                      ) : (
+                        <button onClick={() => handleInstallApp(app.id, app.tsfItem)} className="px-2.5 py-1 rounded text-[9px] bg-blue-500/20 border border-blue-400/30 text-blue-300 hover:bg-blue-500/30 transition-colors">
+                          获取{app.price > 0 ? ` (${app.price}G)` : ''}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="p-2 border-t border-white/5">
+          <span className="text-[9px] text-gray-500">已安装 {ownedApps.length} 个应用</span>
+        </div>
+      </div>
+    );
+  };
+
   // ── 应用渲染映射 ──────────────────────────────────────────────────
   const appRenderers: Record<AppId, () => React.ReactNode> = {
     camera: renderCameraApp,
@@ -669,6 +788,7 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
     settings: renderSettingsApp,
     clock: renderClockApp,
     messages: renderMessagesApp,
+    appstore: renderAppStore,
   };
 
   // ── 应用标题映射 ──────────────────────────────────────────────────
@@ -681,6 +801,7 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
     settings: '设置',
     clock: '时钟',
     messages: '信息',
+    appstore: '应用商店',
   };
 
   // ── 应用内导航栏 ──────────────────────────────────────────────────

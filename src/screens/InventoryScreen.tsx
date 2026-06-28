@@ -121,6 +121,14 @@ const InventoryScreen: React.FC = () => {
     [dispatch],
   );
 
+  // USE_ITEM action（用于 TSF 道具等通用使用）
+  const handleUseItem = useCallback(
+    (item: InventoryItem) => {
+      dispatch({ type: 'USE_ITEM', payload: item.id });
+    },
+    [dispatch],
+  );
+
   // 丢弃物品
   const handleDiscard = useCallback(
     (item: InventoryItem) => {
@@ -322,6 +330,14 @@ const InventoryScreen: React.FC = () => {
                     className="px-3 py-1 text-xs bg-pink-500/10 border border-pink-500/20 text-pink-300 rounded hover:bg-pink-500/20 transition-all"
                   >
                     触发
+                  </button>
+                )}
+                {(selectedItem as any).usable && (
+                  <button
+                    onClick={() => handleUseItem(selectedItem)}
+                    className="px-3 py-1 text-xs bg-green-500/10 border border-green-500/30 text-green-300 rounded hover:bg-green-500/20 transition-all"
+                  >
+                    使用
                   </button>
                 )}
                 {selectedItem.droppable && (
