@@ -41,17 +41,20 @@ export function useCYOA(network: CYOANetwork) {
     return [];
   }, [state.flags?.cyoaCompletedNodes]);
 
-  /** 當前節點ID (預設為 network.startNodeId) */
-  const currentNodeId: string = useMemo(() => {
+  /** 當前節點ID (預設為 network.startNodeId；為 null 時回到探索模式) */
+  const currentNodeId: string | null = useMemo(() => {
     const raw = state.flags?.cyoaCurrentNode;
     if (typeof raw === 'string' && raw in network.nodes) return raw;
+    // null / undefined / '' 均表示回到探索模式
+    if (raw === null || raw === undefined || raw === '') return null;
     return network.startNodeId;
   }, [state.flags?.cyoaCurrentNode, network.nodes, network.startNodeId]);
 
   // ─── 當前節點對象 ──────────────────────────────────────────────
 
-  /** 當前正在閱讀的節點 */
+  /** 當前正在閱讀的節點 (為 null 時回到探索模式) */
   const currentNode: CYOANode | null = useMemo(() => {
+    if (!currentNodeId) return null;
     return network.nodes[currentNodeId] ?? null;
   }, [network.nodes, currentNodeId]);
 
@@ -123,6 +126,15 @@ export function useCYOA(network: CYOANetwork) {
         if (nextNode && nextNode.scene !== state.currentScene) {
           dispatch({ type: 'SET_SCENE', payload: nextNode.scene });
         }
+      } else if (!nextNodeId) {
+        // nextNodeId 為空字符串 '' → 回到探索模式（currentNode = null）
+        dispatch({
+          type: 'SET_FLAG',
+          payload: {
+            key: 'cyoaCurrentNode',
+            value: null,
+          },
+        });
       }
 
       // 5. 應用到節點 onExit / onEnter 效果

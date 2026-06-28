@@ -11,6 +11,7 @@ import SceneSelector from '@/components/SceneSelector';
 import PossessionUI from '@/components/PossessionUI';
 import TransformationUI from '@/components/TransformationUI';
 import MissionTracker from '@/components/MissionTracker';
+import SafetyRulesBook from '@/components/SafetyRulesBook';
 
 interface Hotspot {
   id: string;
@@ -99,6 +100,7 @@ const ExplorationScreen: React.FC = () => {
   const [showPossession, setShowPossession] = useState(false);
   const [showTransformation, setShowTransformation] = useState(false);
   const [showMissionTracker, setShowMissionTracker] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
@@ -313,6 +315,9 @@ const ExplorationScreen: React.FC = () => {
         break;
       case 'missions':
         setShowMissionTracker(true);
+        break;
+      case 'rules':
+        setShowRules(true);
         break;
     }
   }, [dispatch, advanceTime, addNotification]);
@@ -542,14 +547,17 @@ const ExplorationScreen: React.FC = () => {
               { key: 'map', label: '🗺 地图', color: 'text-emerald-300' },
               { key: 'flowchart', label: '📊 流程图', color: 'text-amber-300' },
               { key: 'phone', label: '📱 手机', color: 'text-cyan-300' },
+              { key: 'journal', label: '📖 日志', color: 'text-yellow-300' },
               { key: 'calendar', label: '📅 日程', color: 'text-indigo-300' },
               { key: 'missions', label: '📋 任务', color: 'text-lime-300' },
-              { key: 'evidence', label: '📋 证据', color: 'text-rose-300' },
+              { key: 'evidence', label: '🔍 证据', color: 'text-rose-300' },
               { key: 'status', label: '👤 状态', color: 'text-purple-300' },
+              { key: 'affinity', label: '❤️ 好感', color: 'text-pink-300' },
               ...(state.flags?.unlocked_possession || awareness >= 50
                 ? [{ key: 'possession', label: '🌀 附身', color: 'text-cyan-300' as const }]
                 : []),
               { key: 'transformation', label: '🔄 TSF', color: 'text-pink-300' as const },
+              { key: 'rules', label: '📖 规则', color: 'text-yellow-300' as const },
             ].map(btn => (
               <button
                 key={btn.key}
@@ -583,6 +591,10 @@ const ExplorationScreen: React.FC = () => {
       <MissionTracker
         isOpen={showMissionTracker}
         onClose={() => setShowMissionTracker(false)}
+      />
+      <SafetyRulesBook
+        isOpen={showRules}
+        onClose={() => setShowRules(false)}
       />
     </div>
   );
