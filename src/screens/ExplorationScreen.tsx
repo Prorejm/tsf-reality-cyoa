@@ -176,7 +176,7 @@ const ExplorationScreen: React.FC = () => {
         break;
 
       case '对话':
-      case '寻找巫女': case '寻找校医': case '寻找出口':
+      case '寻找巫女': case '寻找校医': case '寻找出口': {
         // Auto-set NPC based on scene
         const sceneNpcMap: Record<string, string> = {
           shrine: 'kitsune_miko',
@@ -190,6 +190,7 @@ const ExplorationScreen: React.FC = () => {
         dispatch({ type: 'SET_FLAG', payload: { key: '_dialogue_npc', value: npcTarget } });
         dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'dialogue' } });
         break;
+      }
 
       case 'next_scene': case '前往下个场景':
       case '出门': case '继续探索': case '离开小巷':
