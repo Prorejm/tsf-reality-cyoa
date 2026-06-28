@@ -2,6 +2,7 @@ import type {
   GameState,
   GameAction,
   Period,
+  CognitionStage,
   ChoiceResult,
   Discovery,
   InventoryItem,
@@ -63,41 +64,45 @@ export function createInitialState(config?: GameConfig): GameState {
     playthroughCount: 0,
     playthroughId: generatePlaythroughId(),
 
+    // Flat fields (used by engine files)
     currentDay: 1,
     currentPeriod: 'morning',
     totalDays: config?.totalDays ?? 30,
-
     currentScene: config?.startingScene ?? 'home_bedroom',
     sceneHistory: [],
     exploredScenes: [config?.startingScene ?? 'home_bedroom'],
-
     erosionLevel: 0,
     awarenessLevel: 0,
     perceptionMode: 'resident',
-
     inventory: [],
     equippedItems: {},
     maxInventorySize: config?.maxInventorySize ?? 20,
-
     discoveries: [],
     clues: [],
     clueLinks: [],
-
     npcRelations: {},
-
     flags: { ...(config?.initialFlags ?? {}) },
     activeEvents: [],
     completedEvents: [],
-
     endings: [],
     badEnds: [],
-
     narrativeLog: [],
-
     schedule: [],
     listeners: [],
-
     lastSave: '',
+
+    // Nested fields (backward compatibility for screens)
+    time: { day: 1, totalDays: config?.totalDays ?? 30, period: 'morning' as Period, periodAction: 0, maxActionsPerPeriod: 2, dayLimit: config?.totalDays ?? 30 },
+    cognition: { realityAwareness: 0, erosionLevel: 0, stage: 'outsider' as CognitionStage, stability: 100 },
+    zone: { currentZone: 'border_district', currentScene: config?.startingScene ?? 'home_bedroom', exploredScenes: [config?.startingScene ?? 'home_bedroom'], zoneProgress: 0, zoneReality: 0, lockedZones: [], dayChanged: false },
+    narrative: { activeEvent: null, flags: { ...(config?.initialFlags ?? {}) }, visitedEvents: [], currentDialogueIndex: 0, dialogueHistory: [], availableRoutes: [], routeLock: null },
+    ending: { type: null, description: '', playerFinalForm: '', badEndsUnlocked: [], endingsUnlocked: [] },
+    player: { id: '', name: '', originalGender: 'male', originalAge: 25, currentGender: 'male', currentAge: 25, identity: '调查者', identityStack: [], appearanceTags: [], statusEffects: [] },
+    discoveriesSection: { total: 0, entries: [], categories: [], journalPage: 0, hasUnread: false },
+    inventorySection: { items: [], maxItems: config?.maxInventorySize ?? 20, equipment: { head: null, body: null, accessory: null, weapon: null }, equipped: { head: null, body: null, accessory: null, weapon: null }, clues: [], clueCategories: [], keyItems: [], notes: '', money: 0 },
+    playthrough: { current: 0, maxUnlocked: 1, carryOver: { flags: {}, inventoryItems: [], endingsUnlocked: [], badEndsUnlocked: [], clueCategories: [], npcAffinityBases: {} } },
+    puzzles: {},
+    expansionSlots: {},
   };
 }
 
@@ -121,19 +126,23 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'TIME_ADVANCE': {
       const next = nextPeriod(state.currentPeriod);
       const isNewDay = next === null;
+      const newPeriod = next ?? 'morning';
+      const newDay = isNewDay ? state.currentDay + 1 : state.currentDay;
       return {
         ...state,
-        currentPeriod: next ?? 'morning',
-        currentDay: isNewDay ? state.currentDay + 1 : state.currentDay,
+        currentPeriod: newPeriod,
+        currentDay: newDay,
+        // Also update nested fields for screens
+        time: { ...state.time, day: newDay, period: newPeriod as Period, periodAction: 0 },
         narrativeLog: [
           ...state.narrativeLog,
           {
             type: 'system',
             content: isNewDay
-              ? `第 ${state.currentDay + 1} 天 - 早晨`
-              : `时间推进到 ${next ?? '早晨'}`,
-            day: isNewDay ? state.currentDay + 1 : state.currentDay,
-            period: next ?? 'morning',
+              ? `第 ${newDay} 天 - 早晨`
+              : `时间推进到 ${newPeriod}`,
+            day: newDay,
+            period: newPeriod as Period,
             timestamp: Date.now(),
           },
         ],

@@ -1,78 +1,44 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { GameProvider, useGame } from '@/game/engine/GameContext'
+import { useState, useEffect, useCallback, lazy, Suspense, type FC } from 'react'
+import { GameProvider, useGame } from '@/game/engine/GameContext';
 
-// ===== 懒加载屏幕组件 =====
-const TitleScreen = lazy(() => import('@/screens/TitleScreen'))
-const ExplorationScreen = lazy(() => import('@/screens/ExplorationScreen'))
-const DialogueScreen = lazy(() => import('@/screens/DialogueScreen'))
-const ObservationScreen = lazy(() => import('@/screens/ObservationScreen'))
-const PuzzleScreen = lazy(() => import('@/screens/PuzzleScreen'))
-const JournalScreen = lazy(() => import('@/screens/JournalScreen'))
-const InventoryScreen = lazy(() => import('@/screens/InventoryScreen'))
-const CalendarScreen = lazy(() => import('@/screens/CalendarScreen'))
-const MapScreen = lazy(() => import('@/screens/MapScreen'))
-const AffinityScreen = lazy(() => import('@/screens/AffinityScreen'))
-const EndingScreen = lazy(() => import('@/screens/EndingScreen'))
-const PhoneScreen = lazy(() => import('@/screens/PhoneScreen'))
+// Direct imports for type safety (code-split via manual chunks)
+import TitleScreen from '@/screens/TitleScreen'
+import ExplorationScreen from '@/screens/ExplorationScreen'
+import DialogueScreen from '@/screens/DialogueScreen'
+import ObservationScreen from '@/screens/ObservationScreen'
+import PuzzleScreen from '@/screens/PuzzleScreen'
+import JournalScreen from '@/screens/JournalScreen'
+import InventoryScreen from '@/screens/InventoryScreen'
+import CalendarScreen from '@/screens/CalendarScreen'
+import MapScreen from '@/screens/MapScreen'
+import AffinityScreen from '@/screens/AffinityScreen'
+import EndingScreen from '@/screens/EndingScreen'
+import PhoneScreen from '@/screens/PhoneScreen'
 
 import { DayTransition } from '@/components/DayTransition'
 import { RealityBreak } from '@/components/RealityBreak'
 import { PerceptionToggle } from '@/components/PerceptionToggle'
 
 type ScreenId =
-  | 'title'
-  | 'exploration'
-  | 'dialogue'
-  | 'observation'
-  | 'puzzle'
-  | 'journal'
-  | 'inventory'
-  | 'calendar'
-  | 'map'
-  | 'affinity'
-  | 'ending'
-  | 'phone'
+  | 'title' | 'exploration' | 'dialogue' | 'observation' | 'puzzle'
+  | 'journal' | 'inventory' | 'calendar' | 'map' | 'affinity' | 'ending' | 'phone'
 
-// ===== 加载占位 =====
-function ScreenFallback() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="w-8 h-8 border-2 border-pink-400/30 border-t-pink-400 rounded-full animate-spin" />
-    </div>
-  )
-}
-
-// ===== 游戏路由（懒加载） =====
+// ===== 游戏路由 =====
 function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: ScreenId) => void }) {
-  const { state } = useGame()
-
   switch (screen) {
-    case 'title':
-      return <TitleScreen onNavigate={onNavigate} />
-    case 'exploration':
-      return <ExplorationScreen onNavigate={onNavigate} />
-    case 'dialogue':
-      return <DialogueScreen onNavigate={onNavigate} />
-    case 'observation':
-      return <ObservationScreen onNavigate={onNavigate} />
-    case 'puzzle':
-      return <PuzzleScreen onNavigate={onNavigate} />
-    case 'journal':
-      return <JournalScreen onNavigate={onNavigate} />
-    case 'inventory':
-      return <InventoryScreen onNavigate={onNavigate} />
-    case 'calendar':
-      return <CalendarScreen onNavigate={onNavigate} />
-    case 'map':
-      return <MapScreen onNavigate={onNavigate} />
-    case 'affinity':
-      return <AffinityScreen onNavigate={onNavigate} />
-    case 'ending':
-      return <EndingScreen onNavigate={onNavigate} />
-    case 'phone':
-      return <PhoneScreen onClose={() => onNavigate('exploration')} />
-    default:
-      return <TitleScreen onNavigate={onNavigate} />
+    case 'title': return <TitleScreen onNavigate={onNavigate} />
+    case 'exploration': return <ExplorationScreen onNavigate={onNavigate} />
+    case 'dialogue': return <DialogueScreen onNavigate={onNavigate} />
+    case 'observation': return <ObservationScreen onNavigate={onNavigate} />
+    case 'puzzle': return <PuzzleScreen onNavigate={onNavigate} />
+    case 'journal': return <JournalScreen onNavigate={onNavigate} />
+    case 'inventory': return <InventoryScreen onNavigate={onNavigate} />
+    case 'calendar': return <CalendarScreen onNavigate={onNavigate} />
+    case 'map': return <MapScreen onNavigate={onNavigate} />
+    case 'affinity': return <AffinityScreen onNavigate={onNavigate} />
+    case 'ending': return <EndingScreen onNavigate={onNavigate} />
+    case 'phone': return <PhoneScreen onClose={() => onNavigate('exploration')} />
+    default: return <TitleScreen onNavigate={onNavigate} />
   }
 }
 
@@ -80,58 +46,34 @@ function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: 
 function AppShell() {
   const { state } = useGame()
   const [screen, setScreen] = useState<ScreenId>('title')
+  const navigate = useCallback((target: ScreenId) => setScreen(target), [])
 
-  const navigate = useCallback((target: ScreenId) => {
-    setScreen(target)
-  }, [])
+  const [dayTrans, setDayTrans] = useState<{ active: boolean; day: number }>({ active: false, day: 0 })
+  const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({ active: false, intensity: 'mild' })
 
-  // 天数切换动画
-  const [dayTrans, setDayTrans] = useState<{ active: boolean; day: number; specialDate?: string }>({
-    active: false, day: 0,
-  })
-
-  // 侵蚀 ≥90 → BAD END 触发器
-  const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({
-    active: false, intensity: 'mild',
-  })
-
-  // 监听天数变化
   useEffect(() => {
-    if (state.time.day > 0 && screen === 'exploration' && state.time.period === 'morning' && state.time.periodAction === 0) {
-      setDayTrans({ active: true, day: state.time.day, specialDate: state.time.specialDate ?? undefined })
+    if (state.currentDay > 0 && screen === 'exploration' && state.currentPeriod === 'morning') {
+      setDayTrans({ active: true, day: state.currentDay })
     }
-  }, [state.time.day, state.time.period, state.time.periodAction, screen])
+  }, [state.currentDay, state.currentPeriod, screen])
 
-  // BAD END 触发
   useEffect(() => {
-    if (state.cognition.erosionLevel >= 90 && screen === 'exploration') {
-      setRealityBreak({ active: true, intensity: 'severe' })
+    if (state.erosionLevel >= 80 && screen === 'exploration') {
+      setRealityBreak({ active: true, intensity: state.erosionLevel >= 90 ? 'severe' : 'moderate' })
     }
-  }, [state.cognition.erosionLevel, screen])
+  }, [state.erosionLevel, screen])
 
   const showPerceptionToggle = screen === 'exploration' || screen === 'observation' || screen === 'dialogue'
 
   return (
     <div className="relative min-h-screen">
-      <Suspense fallback={<ScreenFallback />}>
-        <GameRouter screen={screen} onNavigate={navigate} />
-      </Suspense>
-
+      <GameRouter screen={screen} onNavigate={navigate} />
       {showPerceptionToggle && <PerceptionToggle />}
-
       {dayTrans.active && (
-        <DayTransition
-          day={dayTrans.day}
-          specialDate={dayTrans.specialDate}
-          onComplete={() => setDayTrans({ active: false, day: 0 })}
-        />
+        <DayTransition day={dayTrans.day} onComplete={() => setDayTrans({ active: false, day: 0 })} />
       )}
-
       {realityBreak.active && (
-        <RealityBreak
-          intensity={realityBreak.intensity}
-          onComplete={() => setRealityBreak({ active: false, intensity: 'mild' })}
-        />
+        <RealityBreak intensity={realityBreak.intensity} onComplete={() => setRealityBreak({ active: false, intensity: 'mild' })} />
       )}
     </div>
   )
