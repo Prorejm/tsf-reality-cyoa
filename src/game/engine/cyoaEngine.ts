@@ -22,6 +22,19 @@ export interface CYOANode {
   truthNarrative?: string;
   /** 可用选择列表 */
   choices: CYOAChoice[];
+  /** 节点级别的状态条件（不满足时节点不可见） */
+  stateConditions?: {
+    /** 需要特定的玩家性别 */
+    playerGender?: 'male' | 'female' | 'secret';
+    /** 需要特定的玩家年龄 */
+    playerAge?: 'adult' | 'teen' | 'child';
+    /** 需要特定的玩家种族 */
+    playerSpecies?: string;
+    /** 需要特定的身份 */
+    playerIdentity?: string;
+    /** 需要特定flag被设置 */
+    requiredFlags?: Record<string, any>;
+  };
   /** 进入节点时的效果 */
   onEnter?: {
     erosion?: number;
@@ -81,6 +94,15 @@ export interface CYOAChoice {
     hasItem?: string;
     /** 需要设置的旗标 */
     hasFlag?: string;
+    /** 新增：需要特定玩家状态 */
+    playerGender?: 'male' | 'female' | 'secret';
+    playerAge?: 'adult' | 'teen' | 'child';
+    playerSpecies?: string;  // 支持 'any_monster' 通配
+    playerIdentity?: string;
+    /** 新增：需要已附身某NPC */
+    possessedNpc?: string;
+    /** 新增：需要特定数量已完成节点 */
+    minCompletedNodes?: number;
   };
 }
 
@@ -110,12 +132,28 @@ export function getAvailableNodes(
   completedNodes: string[],
 ): CYOANode[] {
   const completedSet = new Set(completedNodes ?? []);
+  const flags = state.flags ?? {};
   return Object.values(network.nodes).filter((node) => {
     const day = state.currentDay;
     // 必须在 dayMin/dayMax 范围内
     if (day < node.dayMin || day > node.dayMax) return false;
     // 必须未完成
     if (completedSet.has(node.id)) return false;
+
+    // ─── stateConditions 过滤 ─────────────────────────
+    const sc = node.stateConditions;
+    if (sc) {
+      if (sc.playerGender !== undefined && flags.player_gender !== sc.playerGender) return false;
+      if (sc.playerAge !== undefined && flags.player_age !== sc.playerAge) return false;
+      if (sc.playerSpecies !== undefined && flags.player_species !== sc.playerSpecies) return false;
+      if (sc.playerIdentity !== undefined && flags.player_identity !== sc.playerIdentity) return false;
+      if (sc.requiredFlags) {
+        for (const [key, value] of Object.entries(sc.requiredFlags)) {
+          if (flags[key] !== value) return false;
+        }
+      }
+    }
+
     return true;
   });
 }
@@ -137,8 +175,12 @@ export function getAvailableChoices(
     awarenessLevel: number;
     inventory?: any[];
     flags?: Record<string, any>;
+    completedNodes?: string[];
   },
 ): CYOAChoice[] {
+  const flags = state.flags ?? {};
+  const completedNodes = state.completedNodes ?? [];
+
   return node.choices.filter((choice) => {
     const cond = choice.conditions;
     if (!cond) return true; // 无条件限制
@@ -165,9 +207,29 @@ export function getAvailableChoices(
     }
     // 需要某旗标被设置
     if (cond.hasFlag !== undefined) {
-      const flags = state.flags ?? {};
       if (!flags[cond.hasFlag]) return false;
     }
+
+    // ─── 新增条件过滤 ─────────────────────────────
+    // 玩家性别
+    if (cond.playerGender !== undefined && flags.player_gender !== cond.playerGender) return false;
+    // 玩家年龄
+    if (cond.playerAge !== undefined && flags.player_age !== cond.playerAge) return false;
+    // 玩家种族（支持 'any_monster' 通配）
+    if (cond.playerSpecies !== undefined) {
+      const species = flags.player_species;
+      if (cond.playerSpecies === 'any_monster') {
+        if (!species || species === 'human') return false;
+      } else {
+        if (species !== cond.playerSpecies) return false;
+      }
+    }
+    // 玩家身份
+    if (cond.playerIdentity !== undefined && flags.player_identity !== cond.playerIdentity) return false;
+    // 需要已附身某NPC
+    if (cond.possessedNpc !== undefined && !flags[cond.possessedNpc]) return false;
+    // 需要特定数量已完成节点
+    if (cond.minCompletedNodes !== undefined && completedNodes.length < cond.minCompletedNodes) return false;
 
     return true;
   });
@@ -230,6 +292,13 @@ export function processChoice(
       category: fx.addItem.type,
     };
     dispatch({ type: 'ADD_ITEM', payload: itemPayload });
+
+    // 处理物品的flags数组——将每个flag设置为true
+    if (fx.addItem.flags && Array.isArray(fx.addItem.flags)) {
+      fx.addItem.flags.forEach((flag: string) => {
+        dispatch({ type: 'SET_FLAG', payload: { key: flag, value: true } });
+      });
+    }
   }
 
   // 设置游戏旗标

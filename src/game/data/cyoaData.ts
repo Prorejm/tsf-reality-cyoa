@@ -1311,6 +1311,232 @@ const hidden_ending = {
   choices: [],
 };
 
+// ─── TSF专属分支：年龄变化（player_age = 'child' 时解锁）─────────────
+
+const kindergarten = {
+  id: 'kindergarten',
+  scene: 'school',
+  dayMin: 2, dayMax: 7,
+  title: '幼儿园',
+  narrative: '你变小了。世界在你眼中变得巨大而陌生。一个穿着围裙的年轻老师蹲下来，用过分甜腻的声音对你说：「小朋友，你怎么一个人在这里呀？来，跟老师进教室吧。」她伸出手。你注意到她的指甲——涂着和你昨晚在梦里见到的一模一样的颜色。',
+  stateConditions: { playerAge: 'child' },
+  choices: [
+    { id: 'kg_follow', text: '乖乖跟着老师进教室', effects: { awareness: 3, setFlag: { kindergarten_entered: true } }, resultText: '教室里坐着一排和你差不多"大"的孩子。不——你很快发现，他们中的几个眼神不对。那不是孩子的眼神。那是被困在幼小身体里的成年人的眼神。', nextNodeId: 'kindergarten_class' },
+    { id: 'kg_resist', text: '假装摔倒然后逃跑', effects: { erosion: 3, awareness: 5, setFlag: { kindergarten_escaped: true } }, resultText: '你蹲下假装系鞋带，趁老师转身的瞬间——冲向大门。背后传来老师的声音，仍然是那副甜腻的语调：「跑吧——反正你还会回来的。」', nextNodeId: 'town_arrival' },
+  ]
+};
+
+const kindergarten_class = {
+  id: 'kindergarten_class',
+  scene: 'school',
+  dayMin: 2, dayMax: 7,
+  title: '幼儿园教室',
+  narrative: '教室里的玩具散落一地。老师让你坐到角落的垫子上。坐在你旁边的女孩——看起来大概四五岁——偷偷拉了拉你的袖子。她压低声音说：「你也是被变小的吗？我是昨天的。不——我是上个月的。不——我已经记不清了。」她的眼里有泪水，但嘴角却在微笑。',
+  stateConditions: { playerAge: 'child' },
+  choices: [
+    { id: 'kg_whisper', text: '低声问她「你知道怎么恢复吗？」', effects: { awareness: 5, setFlag: { met_shrunk_girl: true } }, resultText: '她摇头，然后悄悄塞给你一张纸条。上面用歪歪扭扭的字写着：「园长室。蓝色档案柜。第三层。别让老师看到。」', nextNodeId: 'start' },
+    { id: 'kg_play', text: '装作普通孩子开始玩玩具', effects: { erosion: 5, setFlag: { played_as_child: true } }, resultText: '你拿起一个积木。指尖触碰到积木的瞬间——一段记忆涌了上来。这不是你的记忆。是一个真正的孩子在这个教室里玩的记忆。她叫桃子。她消失了。', nextNodeId: 'start' },
+  ]
+};
+
+const elementary_school = {
+  id: 'elementary_school',
+  scene: 'school',
+  dayMin: 3, dayMax: 7,
+  title: '小学',
+  narrative: '你穿着小学校服——不知道什么时候换上的。书包里装着二年级的课本。走廊尽头，校长室的门虚掩着。你听到里面传来一个成年男人的声音和新学生的对话。\n\n「你叫什么名字？」\n「……我叫……我原来叫……」\n「不对。你的名字是——」\n「……是的……我叫……」\n\n那个学生的声音越来越小——越来越像一个真正的孩子。',
+  stateConditions: { playerAge: 'child' },
+  choices: [
+    { id: 'el_peek', text: '悄悄靠近校长室偷看', effects: { awareness: 6, erosion: 3, setFlag: { peeked_principal: true } }, resultText: '你从门缝看到了。校长坐在办公桌后——他的脸没有五官。是一张完全光滑的面具。他用那张没有嘴的脸对着那个学生说话。而学生——正在用橡皮擦掉自己原本的名字。', nextNodeId: 'start' },
+    { id: 'el_run', text: '逃出学校', effects: { awareness: 3, setFlag: { fled_elementary: true } }, resultText: '你跑出校门。外面的世界变了。街道变宽了——或者说你变小了。你意识到——作为一个孩子，你失去了很多选择。但也获得了一些只有孩子才能看到的东西。', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：附身觉醒 ──────────────────────────────────────────
+
+const possession_awakening = {
+  id: 'possession_awakening',
+  scene: 'home_bedroom',
+  dayMin: 1, dayMax: 3,
+  title: '意识附身',
+  narrative: '你的意识变得模糊。你感觉到自己的意识在上升——像从水底浮出水面。你低头看向自己的身体——它还在原地，但眼神空洞。你变成了……别的东西。一个幽灵般的观察者。周围的世界变得透明——你看到了墙壁另一侧的空间。你可以「进入」任何人的身体。',
+  stateConditions: { requiredFlags: { unlocked_possession: true } },
+  choices: [
+    { id: 'pos_kitsune', text: '附身到狐铃身上', effects: { erosion: 8, setFlag: { possessed_kitsune: true, player_species: 'kitsune' } }, resultText: '你进入了狐铃的身体。她的记忆像洪水一样涌入——神社的真正用途、怪异与人类之间的协议、以及她对你的真实感情。你睁开她的眼睛——世界看起来完全不同了。', nextNodeId: 'possessed_kitsune_route' },
+    { id: 'pos_slime', text: '附身到小翠身上', effects: { erosion: 6, setFlag: { possessed_slime: true, player_species: 'slime' } }, resultText: '小翠的身体比你想象的要……柔软得多。她的记忆是混乱的——便利店的地下室里有一个你不该看到的东西。', nextNodeId: 'possessed_slime_route' },
+    { id: 'pos_vampire', text: '附身到血月医生身上', effects: { erosion: 10, awareness: 8, setFlag: { possessed_vampire: true, player_species: 'vampire' } }, resultText: '血月的记忆像冰一样冷。她对血液的渴望、对永生者的孤独、以及——医院太平间里的秘密。', nextNodeId: 'possessed_vampire_route' },
+    { id: 'pos_resist', text: '抵抗这种力量', effects: { awareness: 10, erosion: -5, setFlag: { resisted_possession: true } }, resultText: '你猛地把自己的意识拉回身体。头痛欲裂。但你知道——这座城市里还有其他人拥有这种力量。他们正在用它做什么？', nextNodeId: 'start' },
+  ]
+};
+
+const possessed_kitsune_route = {
+  id: 'possessed_kitsune_route',
+  scene: 'shrine',
+  dayMin: 1, dayMax: 7,
+  title: '狐铃的记忆',
+  narrative: '作为狐铃，你看到了世界的另一面。神社后方隐藏着一座地下神社——供奉的不是神，而是「境界的裂缝」。狐铃的职责不是守护神社，而是守护这个裂缝不被人类发现。\n\n她每天早上在神社前做虚假的祈祷，每天晚上则在裂缝前进行真正的仪式。她的狐狸耳朵能听到裂缝中传出的低语——那是另一个世界的居民试图沟通的声音。\n\n而她对你的感情——不是偶然的。她认出你是「境界敏感者」。她一直在保护你，不让你被裂缝吞噬。',
+  conditions: { hasFlag: 'possessed_kitsune' },
+  choices: [
+    { id: 'pk_explore_cave', text: '探索地下神社的深处', effects: { awareness: 8, erosion: 5, setFlag: { explored_under_shrine: true } }, resultText: '地下神社的深处有一面巨大的青铜镜——比你房间里的那面大得多。镜面上刻着和你铜镜上一样的符文。当你靠近时——镜中浮现出一张脸。是你自己——但穿着古代的衣服。', nextNodeId: 'kitsune_discovery' },
+    { id: 'pk_perform_ritual', text: '代替狐铃进行裂缝封印仪式', effects: { awareness: 3, erosion: 8, setFlag: { performed_ritual: true } }, resultText: '你按照狐铃的记忆开始仪式。当你的手触碰裂缝边缘时——你感到一股巨大的力量涌入体内。裂缝震动起来——它正在扩大。你赶紧收手。仪式失败了——或者说，仪式被干扰了。裂缝比之前更大了一点。', nextNodeId: 'kitsune_consequence' },
+    { id: 'pk_leave_body', text: '离开狐铃的身体', effects: { awareness: 5, setFlag: { left_kitsune_body: true } }, resultText: '你将自己的意识抽离狐铃的身体。在离开的瞬间——你看到了她真正的想法：她一直在等你发现真相。她需要你的帮助。', nextNodeId: 'start' },
+  ]
+};
+
+const kitsune_discovery = {
+  id: 'kitsune_discovery',
+  scene: 'shrine',
+  dayMin: 1, dayMax: 7,
+  title: '青铜镜的秘密',
+  narrative: '你站在巨大的铜镜前。镜中的古代你开口说话了——声音是重叠的，像多个人同时说话：\n\n「你终于来了。我是你——三百年前的你。这座城市的常識覆蓋——是我种下的。当时我以为自己在保护人类。现在我知道——我错了。」\n\n镜中的画面变化了。你看到三百年前——一个和你长得一模一样的人——站在同样的位置——做出了不同的选择。他不是建立常識覆蓋，而是试图完全隔绝两个世界。结果导致了灾难性的反噬。',
+  stateConditions: { requiredFlags: { explored_under_shrine: true } },
+  choices: [
+    { id: 'kd_ask_fix', text: '询问如何修复常識覆蓋的伤害', effects: { awareness: 5, setFlag: { asked_about_fix: true } }, resultText: '镜中的你摇了摇头：「修复？不。你要做的是——把它整个打破。然后重新建立。用你的规则——而不是我的。」', nextNodeId: 'start' },
+    { id: 'kd_touch_mirror', text: '伸手触碰镜中自己的手', effects: { erosion: 10, awareness: 10, setFlag: { touched_ancient_self: true } }, resultText: '当你的指尖碰到镜面时——三百年的记忆涌入了你的脑海。你看到了常識覆蓋被建立的整个过程——那不是出于恶意，而是出于恐惧。但你看到的不仅仅是记忆——你还看到了如何逆转它。代价是——你再也不能回到「正常」了。', nextNodeId: 'start' },
+    { id: 'kd_destroy', text: '尝试打碎铜镜', effects: { erosion: 3, setFlag: { tried_break_mirror: true } }, resultText: '你举起一块石头砸向镜面——但镜子纹丝不动。反而是你的手被震得发麻。镜中的你露出一丝苦笑：「我就是你。你打不碎自己的。」', nextNodeId: 'start' },
+  ]
+};
+
+const kitsune_consequence = {
+  id: 'kitsune_consequence',
+  scene: 'shrine',
+  dayMin: 1, dayMax: 7,
+  title: '裂缝的涟漪',
+  narrative: '你失败的仪式在城市中引发了一连串的连锁反应。第二天——小镇上的人开始看到不该看到的东西。一个主妇在超市里看到了透明的狐狸穿过货架。一个小学生看到同学的脸变成了鸟类的喙。\n\n常識覆蓋出现了裂缝——因为你在错误的时间、以错误的方式触碰了它。狐鈴回到自己的身体后，虚弱地靠在墙上：「你……你知道你做了什么吗？」她的声音中没有愤怒——只有恐惧。\n\n「现在——他们会在三天内开始怀疑。而怀疑——是常識覆蓋最大的敵人。」',
+  stateConditions: { requiredFlags: { performed_ritual: true } },
+  choices: [
+    { id: 'kc_warn_people', text: '尝试警告镇上的人', effects: { awareness: 5, setFlag: { warned_town: true } }, resultText: '你试图告诉人们真相。但他们看你的眼神——就像看一个疯子。直到一个老人拉住你。他低声说：「我知道你说的是真的。我一直在等——等一个能看到的人出现。」', nextNodeId: 'start' },
+    { id: 'kc_hide', text: '躲起来观察事态发展', effects: { erosion: 5, setFlag: { hid_after_ritual: true } }, resultText: '你躲在公寓里。透过窗户——你看到街道上的行人偶尔会停下脚步，茫然地看着天空。就像他们感觉到了什么——但不明白那是什么。', nextNodeId: 'start' },
+    { id: 'kc_double_down', text: '再次尝试仪式——这次强行完成', effects: { erosion: 15, awareness: 8, setFlag: { forced_ritual: true } }, resultText: '你强行完成了仪式。裂缝没有关闭——它张开了。从裂缝中——一股金色的光芒涌出。不是阳光——是另一种光。境界的光。整个神社开始震动。你听到了——从裂缝中传出了成千上万的声音。', nextNodeId: 'start' },
+  ]
+};
+
+const possessed_slime_route = {
+  id: 'possessed_slime_route',
+  scene: 'town_center',
+  dayMin: 1, dayMax: 7,
+  title: '小翠的日常',
+  narrative: '小翠的身体感觉……黏糊糊的。你低头看自己的手——它正在微微变形，指尖拉长成半透明的触须又缩回去。你赶紧集中精力维持人形。\n\n便利店里的灯光在你眼中变得刺眼。你能听到收银台的电流声——不，不仅是听到——你能感觉到电流在电线中流动，像是某种悦耳的音乐。\n\n小翠的记忆碎片浮现：她在这家店工作了三年。三年来——她每天晚上都会在打烊后打开地下室的门。那里有她不让你知道的东西。',
+  conditions: { hasFlag: 'possessed_slime' },
+  choices: [
+    { id: 'ps_check_basement', text: '趁没有客人去地下室看看', effects: { awareness: 8, erosion: 5, setFlag: { checked_slime_basement: true } }, resultText: '地下室的楼梯很长。灯光忽明忽暗。当你走到最下面时——你看到了一面墙。墙上覆盖着某种半透明的膜——它在缓慢地脉动，像是活着的。膜的另一侧——你能看到模糊的人形轮廓。他们在敲打膜——无声地。', nextNodeId: 'slime_basement_secret' },
+    { id: 'ps_serve_customer', text: '先好好工作——观察来往的客人', effects: { awareness: 3, setFlag: { observed_customers: true } }, resultText: '你站在收银台后面。一个又一个客人走进店里。他们看起来都是普通人——但当你集中注意力时——你发现他们的影子不对劲。有些人没有影子。有些人的影子在动——而人本身没动。', nextNodeId: 'slime_customer_insight' },
+    { id: 'ps_leave_body', text: '离开小翠的身体', effects: { awareness: 3, setFlag: { left_slime_body: true } }, resultText: '你抽离意识时——小翠的身体像融化的果冻一样瘫软了一瞬，然后她重新控制了自己。她满脸通红：「你……你看到了？」', nextNodeId: 'start' },
+  ]
+};
+
+const slime_basement_secret = {
+  id: 'slime_basement_secret',
+  scene: 'town_center',
+  dayMin: 1, dayMax: 7,
+  title: '地下室的墙壁',
+  narrative: '你走近那面脉动的墙。它像一层巨大的细胞膜——半透明，表面有血管状的纹路。当你伸手触碰它时——膜的表面泛起涟漪，然后——一张脸从膜的另一侧浮现。\n\n那是一个年轻男人的脸。他张大嘴——似乎在喊什么——但没有声音传来。接着更多的脸浮现。有男有女，有老有少。十几张脸挤在膜的内侧——全都无声地呐喊。\n\n你猛然意识到——这些人不是死了。他们是「消失的人」。那些被常識覆蓋抹去存在的人。他们没有被杀死——他们被转移到了这里。而这面膜——是城市的「潜意识」。',
+  stateConditions: { requiredFlags: { checked_slime_basement: true } },
+  choices: [
+    { id: 'sb_break_membrane', text: '尝试撕开膜', effects: { erosion: 10, awareness: 10, setFlag: { tore_membrane: true } }, resultText: '你的手——带着小翠的黏液——竟然融入了膜中。当你的手指穿过膜时——你听到了那些消失者的声音。不是尖叫——是感谢。但在你把他们拉出来之前——便利店的门铃响了。有客人来了。你必须选择是继续还是先上去。', nextNodeId: 'start' },
+    { id: 'sb_memorize', text: '记住每一个面孔', effects: { awareness: 8, setFlag: { memorized_faces: true } }, resultText: '你强迫自己记住每一张脸。一共十七个人。当你的目光扫过最后一张脸时——那是一张你认识的脸。是你在房间照片里看到的那个人——和你合影的那个你不认识的人。', nextNodeId: 'start' },
+    { id: 'sb_retreat', text: '后退——太危险了', effects: { erosion: 3, setFlag: { retreated_from_membrane: true } }, resultText: '你后退了一步。两步。三步。然后你转身跑上楼梯。但你忘不掉那些脸。尤其是最后一张——你的照片里的那个人的脸。', nextNodeId: 'start' },
+  ]
+};
+
+const slime_customer_insight = {
+  id: 'slime_customer_insight',
+  scene: 'town_center',
+  dayMin: 1, dayMax: 7,
+  title: '影子观察',
+  narrative: '你仔细观察每一位顾客。一个穿西装的男人走进来——他的影子是一个蹲着的、有尾巴的生物。一个老太太——她的影子是空的——什么都没有。一个背着书包的女孩——她的影子比实物大了一倍，而且它在笑。\n\n你意识到了：在这个城市里——「影子」才是真实的样子。人类的外表——是常識覆蓋投下的倒影。',
+  stateConditions: { requiredFlags: { observed_customers: true } },
+  choices: [
+    { id: 'si_ask_xiaocui', text: '向小翠的意识提问——这些顾客她认识吗？', effects: { awareness: 5, setFlag: { asked_xiaocui_about_customers: true } }, resultText: '小翠的意识在你的脑海中回应。她的声音带着困惑：「我……我每天看到他们。但我记不住他们的脸。他们每天来——但我总是想不起他们长什么样。」你明白了——常識覆蓋不仅影响了你的记忆。它也在侵蚀小翠这个妖怪的意识。', nextNodeId: 'start' },
+    { id: 'si_follow', text: '跟蹤影子里有尾巴的那个男人', effects: { erosion: 5, awareness: 3, setFlag: { followed_tailed_man: true } }, resultText: '你让身体自动工作——同时分出一缕意识附在男人身上。他离开便利店后走进了一条小巷。在小巷里——他的「影子」膨胀了——包裹了他的身体——然后他变成了一只巨大的犬形妖怪。他甩了甩毛发——消失在夜色中。', nextNodeId: 'start' },
+  ]
+};
+
+const possessed_vampire_route = {
+  id: 'possessed_vampire_route',
+  scene: 'hospital',
+  dayMin: 1, dayMax: 7,
+  title: '血月的记忆',
+  narrative: '血月的身体寒冷而轻盈。你低头看自己——穿着白大褂，胸牌上写着「夜間担当：血月」。你闻到空气中血液的味道——A型、B型、O型——你能分辨出每一种。\n\n记忆涌入：血月不是普通的吸血鬼。她是医院的夜班医生——真正的工作不是治疗病人。而是在夜间「处理」那些常識覆蓋出现了漏洞的患者。那些突然看到妖怪的患者。那些记忆出现错乱的患者。\n\n三楼的太平间——不是存放尸体的地方。那是常識覆蓋的「补丁中心」。',
+  conditions: { hasFlag: 'possessed_vampire' },
+  choices: [
+    { id: 'pv_go_morgue', text: '前往太平间查看', effects: { awareness: 8, erosion: 6, setFlag: { visited_morgue_as_vampire: true } }, resultText: '太平间的自动门滑开。里面不是冰冷的停尸柜——而是一排排发光的容器。每个容器里漂浮着一个人形——他们闭着眼——但指尖在微微颤动。每个容器的标签上都写着「记忆校正中」和预计完成日期。最早的日期是——三百年前。', nextNodeId: 'vampire_morgue_secret' },
+    { id: 'pv_check_patient', text: '查看今晚的「特殊病人」名单', effects: { awareness: 5, setFlag: { checked_special_patients: true } }, resultText: '你在血月的办公桌上找到了名单。今晚有三个「病人」——都是白天在城市中看到了不该看的东西的人。他们的治疗方案不是药物——而是「记忆替换」。而执行人——是你（血月）。', nextNodeId: 'vampire_treatment_choice' },
+    { id: 'pv_confront', text: '在血月的记忆中寻找她对这一切的真实想法', effects: { awareness: 6, setFlag: { learned_vampire_feelings: true } }, resultText: '你深入血月的记忆深处。在那里——你找到了一个被封印的记忆：三百年前——血月是人类。她自愿变成了吸血鬼——不是为了永生——而是为了有能力反抗常識覆蓋。但她失败了。她被收编了。变成了系统的一部分。她恨自己——每天都在恨。', nextNodeId: 'start' },
+    { id: 'pv_leave_body', text: '离开血月的身体', effects: { awareness: 4, setFlag: { left_vampire_body: true } }, resultText: '你从血月的身体中退出。她虚弱地靠在椅子上，闭上眼：「你看到了。你都看到了。现在——你知道这座城市的真相了。」', nextNodeId: 'start' },
+  ]
+};
+
+const vampire_morgue_secret = {
+  id: 'vampire_morgue_secret',
+  scene: 'hospital',
+  dayMin: 1, dayMax: 7,
+  title: '记忆容器',
+  narrative: '你走在容器之间。每个容器里的人都在做梦——被设计的梦。他们的记忆被改写、重編、再植入。\n\n你注意到其中一个容器——编号「0」——位于最深处的角落。里面漂浮着一个小女孩——看起来不到十岁。她的标签上写着：「原始样本——记忆模板来源」。\n\n容器旁边的监控屏幕上滚动着数据：「常識覆蓋穩定度：87.3%——模板適應性：優——預計使用期限：永久。」\n\n这个小女孩——是常識覆蓋的「原型」。她的记忆被复制了无数次——覆盖到了整座城市居民的脑海中。她就是为什么每个人都觉得「正常」。',
+  stateConditions: { requiredFlags: { visited_morgue_as_vampire: true } },
+  choices: [
+    { id: 'vm_release', text: '尝试释放小女孩', effects: { awareness: 10, erosion: 12, setFlag: { tried_release_prototype: true } }, resultText: '你把手放在容器的开关上。但一个声音在你身后响起——是龙映的声音（从血月的记忆中她知道这是谁的声音）。「你确定吗？释放她——整座城市的记忆都会崩塌。他们会记得一切——三百年来的每一次改写。你觉得他们承受得了吗？」', nextNodeId: 'start' },
+    { id: 'vm_read_data', text: '下载所有数据到手机', effects: { awareness: 8, setFlag: { downloaded_morgue_data: true } }, resultText: '你将容器群的管理数据全部拷贝到血月的手机里。几百年来每一次记忆改写的记录——都在你的手中。这是足以摧毁常識覆蓋的证据。', nextNodeId: 'start' },
+    { id: 'vm_leave_quietly', text: '装作什么都没看到——悄悄离开', effects: { erosion: 5, setFlag: { left_morgue_silently: true } }, resultText: '你默默退出太平间。但在关门的一瞬间——你看到编号0的容器里——小女孩睁开了眼睛。她在看你。她在笑。', nextNodeId: 'start' },
+  ]
+};
+
+const vampire_treatment_choice = {
+  id: 'vampire_treatment_choice',
+  scene: 'hospital',
+  dayMin: 1, dayMax: 7,
+  title: '特殊病人',
+  narrative: '血月的手机震动了。护士长发来消息：「今晚的三位特殊病人已经在等待室了。请尽快处理。2号房的病人出现了严重的现实认知撕裂——他一直在重复同一句话：『我老婆不是人类。』」\n\n你走到2号房门口——透过玻璃看到里面坐着一个中年男人。他看起来很普通。但他的眼神——那是看到了不该看到的东西的人的眼神。\n\n你的手里握着血月的「治疗仪」——一个银色的、针管状的装置。它能注入记忆校正液。被注射的人会忘记自己看到的一切异常。',
+  stateConditions: { requiredFlags: { checked_special_patients: true } },
+  choices: [
+    { id: 'vt_inject', text: '执行记忆校正——为他好', effects: { erosion: 8, setFlag: { performed_memory_injection: true } }, resultText: '你走进房间。男人看到你手中的针管——眼神从困惑变成了恐惧。「不——求求你——我不想忘记她——即使她是怪物——她是我的妻子——」你的手在颤抖。但你完成了注射。三秒后——男人眼神中的恐惧消失了。他茫然地看着你：「医生……我怎么在这里？」你告诉他他晕倒了。他信了。', nextNodeId: 'start' },
+    { id: 'vt_refuse', text: '拒绝治疗——告诉他真相', effects: { awareness: 10, erosion: 5, setFlag: { told_patient_truth: true } }, resultText: '你放下针管。你坐在男人对面——告诉他他看到的是真的。他的妻子——是的——她不是人类。但她是爱他的。男人崩溃了——不是恐惧——是释怀。「我……我就知道。我告诉自己我没有疯。」你给了他一个建议：带妻子离开这座城市。因为在这里——真相会被抹去。', nextNodeId: 'start' },
+    { id: 'vt_callback', text: '打电话给龙映——質問她', effects: { awareness: 5, erosion: 10, setFlag: { called_dragon_to_confront: true } }, resultText: '你拨通了龙映的电话。她沉默了几秒——然后用那种平靜得可怕的语气说：「血月。你从来不敢打这个电话的。看来——今天接电话的不是血月吧。」她知道了。', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：催眠 ──────────────────────────────────────────────
+
+const hypnosis_route = {
+  id: 'hypnosis_route',
+  scene: 'alley_night',
+  dayMin: 3, dayMax: 7,
+  title: '梦魇的低语',
+  narrative: '小巷深处——魅魔酒吧的地下室里——藏着一间特殊的房间。房间里点着紫色的蜡烛。墙壁上挂满了古老的催眠图案——旋转的螺旋、复杂的曼陀罗、不断变化的光学幻象。\n\n房间中央有一把椅子。椅子上坐着一个女人——不——不是人。她的眼睛是复眼——像蝴蝶一样——每一面晶體都反射着不同的影像。\n\n她微笑着对你开口：「你终于找到我了。我是城市梦境的管理者。你睡着的时候——我在改写你的梦。但现在——你醒着来到了这里。有意思。」',
+  stateConditions: { requiredFlags: { bar_entered: true } },
+  choices: [
+    { id: 'hr_accept', text: '让她对你进行深度催眠——探索被封印的记忆', effects: { awareness: 12, erosion: 8, setFlag: { accepted_hypnosis: true } }, resultText: '你躺下。她的声音像丝绒一样包裹了你的意识。你感到自己在下沉——穿过一层又一层的记忆。在记忆的最深处——你看到了出生之前的东西。你看到了这座城市没有被覆蓋之前的样子。那是一片充满光芒的土地。光芒的中央——站着一个和你一模一样的人。她/他转过来看着你：「你终于来了。我一直在这个世界等你。」', nextNodeId: 'hypnosis_memory_reveal' },
+    { id: 'hr_resist', text: '抵抗催眠——反过来质问她的目的', effects: { awareness: 5, setFlag: { resisted_hypnosis: true } }, resultText: '你集中精神抵抗她的声音。她有些惊讶——然后露出了欣赏的表情。「不错。你是第一个能抵抗我的人。但你知道吗——抵抗本身也是一种答案。你想知道什么？我可以回答你——用清醒的方式。」', nextNodeId: 'hypnosis_qa' },
+  ]
+};
+
+const hypnosis_memory_reveal = {
+  id: 'hypnosis_memory_reveal',
+  scene: 'alley_night',
+  dayMin: 3, dayMax: 7,
+  title: '最初的记忆',
+  narrative: '你漂浮在记忆的海洋中。你看到了这座城市被建立的过程——不是用砖石和水泥——而是用「共识」。一群古老的妖怪和人类法师共同编织了一个巨大的幻术结界。他们的目的不是欺骗——而是保护。\n\n因为在那之前——人类和妖怪之间的战争几乎毁灭了一切。常識覆蓋是最后的解决方案：让人类相信这个世界上没有妖怪。让妖怪隐藏自己的真实面貌。界限被划定了。和平降临了。\n\n但代价是——所有人都活在谎言里。\n\n你看到了你自己的真正身份。你不是误入这座城市的旅人。你是——当年那个提出常識覆蓋方案的人类的转世。你每一世都会回到这座城市。每一世——你都会发现真相。每一世——你都要做出同样的选择：维持还是打破？',
+  stateConditions: { requiredFlags: { accepted_hypnosis: true } },
+  choices: [
+    { id: 'hm_maintain', text: '原来如此——那么这一世我选择维持', effects: { erosion: 10, setFlag: { chose_maintain_legacy: true } }, resultText: '你从催眠中醒来。梦境管理者看你的眼神变得不同了。「你做出了和你前几世一样的选择。你知道吗——你是历代转世中唯一每次都选择维持的人。也许你的灵魂——本身就渴望秩序。」', nextNodeId: 'start' },
+    { id: 'hm_break', text: '不——这一世我要打破循环', effects: { awareness: 15, setFlag: { chose_break_cycle: true } }, resultText: '梦境管理者听到你的回答——沉默了很久。然后她露出一个真正的微笑——不是魅魔的职业微笑——而是发自内心的。「我等你这句话——等了十二世。」', nextNodeId: 'start' },
+  ]
+};
+
+const hypnosis_qa = {
+  id: 'hypnosis_qa',
+  scene: 'alley_night',
+  dayMin: 3, dayMax: 7,
+  title: '清醒的对话',
+  narrative: '梦境管理者为你倒了一杯茶。茶的颜色是深紫色的——冒着淡金色的蒸汽。\n\n「问吧。但记住——有些答案一旦知道，你就无法回到不知道的状态了。」\n\n她靠在椅背上。她的复眼缓慢地旋转——每一面都注视着你。房间里的紫色烛光在墙壁上投下舞动的阴影。',
+  stateConditions: { requiredFlags: { resisted_hypnosis: true } },
+  choices: [
+    { id: 'hq_identity', text: '「我到底是谁？」', effects: { awareness: 8, setFlag: { asked_identity_hypnosis: true } }, resultText: '她偏了偏头。「你是这座城市的锚点。常識覆蓋需要一個中心——一個自愿成为核心的人类。每一代都有一个人担任这个角色。你是现任。你不知道——是因为如果你知道——你会产生抗拒。而抗拒会削弱覆蓋。」', nextNodeId: 'start' },
+    { id: 'hq_escape', text: '「我能离开这座城市吗？」', effects: { awareness: 5, setFlag: { asked_escape_hypnosis: true } }, resultText: '她笑了。那不是嘲笑——是一种带着悲伤的笑。「物理上——门是开着的。但常識覆蓋的範圍不只限于这座城市。它覆盖了整个认知区域。你走到哪里——它跟到哪里。除非你打破它——不然你永远在它的阴影下。」', nextNodeId: 'start' },
+    { id: 'hq_allies', text: '「还有谁是清醒的？」', effects: { awareness: 6, setFlag: { asked_allies_hypnosis: true } }, resultText: '她竖起三根手指：「我。你的铜镜里的那个你。以及——你自己不知道但一直在等待的某个人。你会在第七天见到他/她。如果你活到那一天的话。」', nextNodeId: 'start' },
+  ]
+};
+
 // ─── CYOA網絡導出 ───────────────────────────────────────────────────
 
 const cyoaNetwork: CYOANetwork = {
@@ -1360,6 +1586,25 @@ const cyoaNetwork: CYOANetwork = {
     normal_ending,
     bad_ending,
     hidden_ending,
+    // TSF专属分支：年龄变化
+    kindergarten,
+    kindergarten_class,
+    elementary_school,
+    // TSF专属分支：附身
+    possession_awakening,
+    possessed_kitsune_route,
+    kitsune_discovery,
+    kitsune_consequence,
+    possessed_slime_route,
+    slime_basement_secret,
+    slime_customer_insight,
+    possessed_vampire_route,
+    vampire_morgue_secret,
+    vampire_treatment_choice,
+    // TSF专属分支：催眠
+    hypnosis_route,
+    hypnosis_memory_reveal,
+    hypnosis_qa,
   },
 };
 

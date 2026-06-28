@@ -67,8 +67,12 @@ export function useCYOA(network: CYOANetwork) {
   /** 當前節點中 conditions 滿足的選擇 */
   const currentChoices = useMemo(() => {
     if (!currentNode) return [];
-    return getAvailableChoices(currentNode, state);
-  }, [currentNode, state]);
+    const stateWithCompleted = {
+      ...state,
+      completedNodes,
+    };
+    return getAvailableChoices(currentNode, stateWithCompleted);
+  }, [currentNode, state, completedNodes]);
 
   // ─── makeChoice ─────────────────────────────────────────────────
 

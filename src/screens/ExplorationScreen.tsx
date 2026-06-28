@@ -8,6 +8,7 @@ import CYOAFlowchart from '@/components/CYOAFlowchart';
 import EvidenceTracker from '@/components/EvidenceTracker';
 import CharacterStatusPanel from '@/components/CharacterStatusPanel';
 import SceneSelector from '@/components/SceneSelector';
+import PossessionUI from '@/components/PossessionUI';
 
 interface Hotspot {
   id: string;
@@ -93,6 +94,7 @@ const ExplorationScreen: React.FC = () => {
   const [showFlowchart, setShowFlowchart] = useState(false);
   const [showEvidence, setShowEvidence] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
+  const [showPossession, setShowPossession] = useState(false);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
@@ -298,6 +300,9 @@ const ExplorationScreen: React.FC = () => {
         break;
       case 'status':
         setShowStatus(true);
+        break;
+      case 'possession':
+        setShowPossession(true);
         break;
     }
   }, [dispatch, advanceTime, addNotification]);
@@ -530,6 +535,9 @@ const ExplorationScreen: React.FC = () => {
               { key: 'calendar', label: '📅 日程', color: 'text-indigo-300' },
               { key: 'evidence', label: '📋 证据', color: 'text-rose-300' },
               { key: 'status', label: '👤 状态', color: 'text-purple-300' },
+              ...(state.flags?.unlocked_possession || awareness >= 50
+                ? [{ key: 'possession', label: '🌀 附身', color: 'text-cyan-300' as const }]
+                : []),
             ].map(btn => (
               <button
                 key={btn.key}
@@ -554,6 +562,9 @@ const ExplorationScreen: React.FC = () => {
         isOpen={showStatus}
         onClose={() => setShowStatus(false)}
       />
+      {showPossession && (
+        <PossessionUI onClose={() => setShowPossession(false)} />
+      )}
     </div>
   );
 };
