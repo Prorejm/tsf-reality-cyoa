@@ -12,8 +12,8 @@ interface Particle {
   delay: number;
 }
 
-const TitleScreen: React.FC = () => {
-  const { state, dispatch, newGame } = useGame();
+const TitleScreen: React.FC<{ onNavigate?: (screen: string) => void }> = ({ onNavigate }) => {
+  const { state, dispatch } = useGame();
   const [particles, setParticles] = useState<Particle[]>([]);
   const [showMenu, setShowMenu] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
@@ -39,19 +39,20 @@ const TitleScreen: React.FC = () => {
 
   const handleNewGame = useCallback(() => {
     dispatch({ type: 'NEW_GAME', payload: undefined });
-  }, [dispatch]);
+    if (onNavigate) onNavigate('exploration');
+  }, [dispatch, onNavigate]);
 
   const handleContinue = useCallback(() => {
-    // 继续游戏——可以通过外部传入保存状态，这里简化处理
-    dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'exploration' } });
-  }, [dispatch]);
+    if (onNavigate) onNavigate('exploration');
+  }, [onNavigate]);
 
   const handleSelectPlaythrough = useCallback(
     (pt: number) => {
       dispatch({ type: 'SET_FLAG', payload: { key: '_selected_playthrough', value: pt } });
       dispatch({ type: 'NEW_GAME', payload: undefined });
+      if (onNavigate) onNavigate('exploration');
     },
-    [dispatch],
+    [dispatch, onNavigate],
   );
 
   const periodLabels: Record<string, string> = {
