@@ -95,13 +95,13 @@ const EndingScreen: React.FC = () => {
   const badEndsUnlocked = state?.ending?.badEndsUnlocked ?? [];
 
   // 通过标志判断当前显示的结局
-  const currentEndingId = (state?.narrative?.flags?.['_current_ending'] as string) ?? endingsUnlocked[endingsUnlocked.length - 1] ?? '';
+  const currentEndingId = ((state.flags ?? {})['_current_ending'] as string) ?? endingsUnlocked[endingsUnlocked.length - 1] ?? '';
   const isBadEnd = badEndsUnlocked.some((b) => b === currentEndingId);
 
-  const daysSpent = state?.time?.day ?? 1;
+  const daysSpent = state.currentDay ?? 1;
   const discoveriesCount = state?.discoveries?.entries?.length ?? 0;
-  const finalErosion = state?.cognition?.erosionLevel ?? 0;
-  const finalAwareness = state?.cognition?.realityAwareness ?? 0;
+  const finalErosion = state.erosionLevel ?? 0;
+  const finalAwareness = state.awarenessLevel ?? 0;
   const metNpcs = Object.values(state?.npcRelations ?? {}).filter((r: any) => r?.met).length;
   const solvedPuzzles = Object.values(state?.puzzles ?? {}).filter((s: any) => s === 'solved').length;
 
@@ -138,6 +138,13 @@ const EndingScreen: React.FC = () => {
     dispatch({
       type: 'SET_FLAG',
       payload: { key: '_screen', value: 'journal' },
+    });
+  }, [dispatch]);
+
+  const handleBack = useCallback(() => {
+    dispatch({
+      type: 'SET_FLAG',
+      payload: { key: '_screen', value: 'exploration' },
     });
   }, [dispatch]);
 
@@ -278,6 +285,15 @@ const EndingScreen: React.FC = () => {
 
         {/* 操作按钮 */}
         <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={handleBack}
+            className={cn(
+              'w-64 px-8 py-3 rounded-lg border transition-all duration-300 font-game text-sm',
+              'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white',
+            )}
+          >
+            ← 返回探索
+          </button>
           <button
             onClick={handleReturnToTitle}
             className={cn(

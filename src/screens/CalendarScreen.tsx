@@ -25,11 +25,11 @@ const WEEKDAY_LABELS = ['日', '一', '二', '三', '四', '五', '六'];
 const CalendarScreen: React.FC = () => {
   const { state, dispatch } = useGame();
 
-  const currentDay = state?.time?.day ?? 1;
-  const currentPeriod = state?.time?.period ?? 'morning';
+  const currentDay = state.currentDay ?? 1;
+  const currentPeriod = state.currentPeriod ?? 'morning';
   const periodAction = state?.time?.periodAction ?? 0;
   const maxActions = state?.time?.maxActionsPerPeriod ?? 2;
-  const totalDays = state?.time?.totalDays ?? 30;
+  const totalDays = state.totalDays ?? 30;
   const dayLimit = state?.time?.dayLimit ?? 30;
 
   const [viewMonth, setViewMonth] = useState(1);
