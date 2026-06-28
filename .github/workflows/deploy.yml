@@ -23,16 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: 'pnpm'
       - name: Install & Build
         run: |
-          pnpm install
+          npm install
           npx vite build --base=/tsf-reality-cyoa/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
