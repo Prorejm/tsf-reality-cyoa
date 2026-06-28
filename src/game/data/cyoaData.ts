@@ -1537,6 +1537,167 @@ const hypnosis_qa = {
   ]
 };
 
+// ─── TSF专属分支：史莱姆化 ──────────────────────────────────────────
+
+const slime_transformation = {
+  id: 'slime_transformation',
+  scene: 'home_bedroom', dayMin: 2, dayMax: 5,
+  title: '史莱姆化',
+  narrative: '你注射了史莱姆血清。身体开始变得柔软、半透明。你看着自己的手——手指正在融化、融合。你不再流血了——你的体液变成了黏稠的透明凝胶。\n\n镜子里的你——已经不太像人类了。但你感觉很好。你感觉……自由。你可以穿过任何缝隙、融入任何形状。',
+  stateConditions: { playerSpecies: 'slime' },
+  choices: [
+    { id: 'slime_explore', text: '以史莱姆形态探索城市（穿过下水道进入各个场所）', effects: { erosion: 5, awareness: 3, setFlag: { slime_form_explored: true } }, resultText: '你把自己压扁，沿着下水道管网滑行。从这个角度——你看到了城市隐藏的一面。墙壁的裂缝里有发光的苔藓。下水道的岔路口——有一个被焊死的铁门。你穿过门缝进去了……', nextNodeId: 'slime_secret_base' },
+    { id: 'slime_mimic', text: '练习模仿人类形态', effects: { erosion: 3, setFlag: { slime_mimic_learned: true } }, resultText: '你努力把身体塑造成原来的样子。但细节不对——眼睛的位置偏了2毫米。嘴角的微笑太完美了。你现在可以完美地扮演一个人——但你不是。', nextNodeId: 'slime_infiltration' },
+    { id: 'slime_merge', text: '尝试融合一个物体（吸收它的特性）', effects: { erosion: 8, awareness: 4, setFlag: { slime_merged_object: true } }, resultText: '你选择了一块石头。你的身体包裹了它——然后它在你体内分解。你现在有了它的硬度。你的皮肤上浮现出石头的纹理。你可以吸收任何东西的特性。', nextNodeId: 'start' },
+  ]
+};
+
+const slime_secret_base = {
+  id: 'slime_secret_base',
+  scene: 'subway_station', dayMin: 2, dayMax: 5,
+  title: '史莱姆秘密基地',
+  narrative: '铁门后面是一个巨大的地下空间。墙壁上覆盖着发光的苔藓——不是普通的苔藓。是史莱姆。这里是史莱姆们的聚集地。\n\n几十个史莱姆——各种大小和颜色——在空间中缓慢蠕动。它们看到你进来了——其中一个大的、紫色的史莱姆朝你移过来。它用身体振动发出声音：「新来的？你也是被「他们」创造的吗？」',
+  stateConditions: { playerSpecies: 'slime' },
+  choices: [
+    { id: 'slime_talk', text: '和紫色史莱姆交流', effects: { awareness: 6, setFlag: { met_elder_slime: true } }, resultText: '它告诉你——城市里的所有史莱姆原本都是人类。理事会用血清把我们变成了这样。那些在便利店、医院、学校里看到的史莱姆——他们都是受害者。但你——你可以自由移动。你可以帮我们。', nextNodeId: 'start' },
+    { id: 'slime_absorb', text: '吸收一个小史莱姆的力量', effects: { erosion: 7, awareness: 2, setFlag: { absorbed_fellow_slime: true } }, resultText: '你吸入了一个绿色的同伴。你感受到了它的记忆——它原本是一个大学生，三周前被注射了血清。它的最后一段记忆是哭泣。', nextNodeId: 'start' },
+  ]
+};
+
+const slime_infiltration = {
+  id: 'slime_infiltration',
+  scene: 'town_center', dayMin: 3, dayMax: 6,
+  title: '史莱姆渗透',
+  narrative: '你以完美的拟态走在人群中。\n\n没有人怀疑你。你的外表和人类一模一样——但你的内心是黏液。你发现自己可以感知周围人的情绪——像触角一样伸出去探测。\n\n前面走来一个穿着西装的男人——你的感知告诉你：他不是人类。他也是某种东西伪装的。但他伪装得比你更高级。',
+  stateConditions: { playerSpecies: 'slime' },
+  choices: [
+    { id: 'slime_follow', text: '跟踪那个非人类', effects: { awareness: 5, erosion: 2, setFlag: { followed_imposter: true } }, resultText: '你跟着他走进了一栋不起眼的大楼。电梯没有按钮——他用指纹识别。但你不需要按钮——你从电梯门的缝隙渗了进去。', nextNodeId: 'start' },
+    { id: 'slime_public', text: '继续在人群中练习', effects: { awareness: 3, setFlag: { slime_public_practice: true } }, resultText: '你坐在广场的长椅上。一个孩子跑过来——盯着你看。她说：「你的眼睛在融化。」你僵硬地微笑。「没关系，」她说，「我不会告诉别人。」她比了一个拉拉链的动作。', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：吸血鬼 ────────────────────────────────────────────
+
+const vampire_awakening = {
+  id: 'vampire_awakening',
+  scene: 'hospital', dayMin: 2, dayMax: 5,
+  title: '血族觉醒',
+  narrative: '你喝下了深红灵药。\n\n效果是瞬间的——你的心跳停止了。世界变成了灰阶——除了红色。你能看到所有红色的事物——血液在人们的血管中流动，像发光的河流。\n\n饥饿感。强烈的、无法忽视的饥饿感。',
+  stateConditions: { playerSpecies: 'vampire' },
+  choices: [
+    { id: 'vampire_hunt', text: '跟随本能去狩猎', effects: { erosion: 10, awareness: 2, setFlag: { vampire_hunted: true } }, resultText: '你找到了一个独行的人。你没有杀他——你只是咬了一口。但他的血——你感受到了他的记忆、他的感受、他的一切。这个味道——你再也忘不掉。', nextNodeId: 'vampire_guilt' },
+    { id: 'vampire_resist', text: '抵抗饥饿感，服用血液替代品', effects: { erosion: 2, awareness: 5, setFlag: { vampire_resisted: true } }, resultText: '你从医院血库偷了一袋血。口感像冷掉的铁锈——但可以暂时缓解。你看着窗外——这个城市有这么多的人。他们的血管在黑暗中发光。', nextNodeId: 'start' },
+    { id: 'vampire_doctor', text: '去找血月医生求助', effects: { awareness: 6, setFlag: { vampire_sought_help: true } }, resultText: '血月看到你——笑了。「我等你很久了。」她递给你一个装着深红色液体的杯子。「喝这个——我的收藏。来自一个自愿者。」', nextNodeId: 'start' },
+  ]
+};
+
+const vampire_guilt = {
+  id: 'vampire_guilt',
+  scene: 'hospital', dayMin: 3, dayMax: 6,
+  title: '血的代价',
+  narrative: '你坐在医院的屋顶边缘。城市的灯光在你眼中变成了红色和黑色的斑块。\n\n你的双手在颤抖。不——你没有真的颤抖——那只是记忆中的颤抖。被你吸血的人的最后感觉。\n\n「第一次？」\n\n血月不知何时站在你身后。她没有走近——她知道你需要空间。「习惯了就好了。或者……你可以学着只从自愿者那里取血。」',
+  stateConditions: { playerSpecies: 'vampire' },
+  choices: [
+    { id: 'vampire_accept', text: '接受血族的身份', effects: { erosion: 5, setFlag: { vampire_accepted: true } }, resultText: '你点了点头。血月在你旁边坐下——保持着距离。她开始讲述她的故事——三百年前她是如何被转化的。她曾经也是一个人类。现在她是永恒的囚徒。', nextNodeId: 'vampire_coven' },
+    { id: 'vampire_reject', text: '拒绝这个身份，寻找恢复的方法', effects: { awareness: 8, erosion: -3, setFlag: { vampire_seeking_cure: true } }, resultText: '你站起来。血月叹了口气。「你找不到解药的。但你可以找替代方案——有一些炼金术配方可以让你恢复人类的饮食习惯。」', nextNodeId: 'start' },
+  ]
+};
+
+const vampire_coven = {
+  id: 'vampire_coven',
+  scene: 'hospital', dayMin: 4, dayMax: 7,
+  title: '血族议会',
+  narrative: '血月带你进入了医院的地下更深处。\n\n不是太平间——是更深的地方。一个维多利亚时代风格的宴会厅，埋在地下三十米处。长桌上坐着六个吸血鬼——男男女女——他们的目光全部落在你身上。\n\n「新人。」坐在主位的一个白发女性开口。「你来得正好。我们正在讨论——理事会最近在策划的『清洗计划』。」',
+  stateConditions: { playerSpecies: 'vampire' },
+  choices: [
+    { id: 'coven_join', text: '加入血族议会，协助对抗理事会', effects: { erosion: 5, awareness: 8, setFlag: { joined_vampire_coven: true } }, resultText: '白发女性微笑——你能看到她的尖牙。「明智的选择。我们需要你的能力——作为新生血族，你可以在日光下活动的时间比我们长。这是一个任务。」', nextNodeId: 'start' },
+    { id: 'coven_alone', text: '拒绝结盟，独自行动', effects: { erosion: 2, awareness: 3, setFlag: { refused_coven: true } }, resultText: '宴会厅的空气凝固了。白发女性微微眯起眼睛。「有趣。那你最好祈祷——理事会不会先找到你。」她挥手示意你离开。', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：猫又 ──────────────────────────────────────────────
+
+const nekomata_awakening = {
+  id: 'nekomata_awakening',
+  scene: 'alley_night', dayMin: 3, dayMax: 6,
+  title: '猫又觉醒',
+  narrative: '你喝下了猫薄荷浓缩液。\n\n你的耳朵开始痒——非常痒。你伸手去摸——它们变了形状、移动到了头顶。与此同时——你的尾椎开始发热。一条毛茸茸的、末端分叉的尾巴从你的尾骨处长了出来。\n\n你看向小巷里的玻璃窗倒影——你的眼睛变成了竖瞳。你的夜视能力大幅提升——黑暗中原本看不见的涂鸦，现在清晰可见。',
+  stateConditions: { playerSpecies: 'nekomata' },
+  choices: [
+    { id: 'neko_explore', text: '用猫的感官探索夜晚的城市', effects: { awareness: 5, setFlag: { neko_night_explored: true } }, resultText: '你的耳朵可以听到几个街区外的对话。你的眼睛可以看到屋顶上其他夜行生物的身影。这座城市在夜晚——完全是另一个世界。', nextNodeId: 'start' },
+    { id: 'neko_stray', text: '寻找其他猫又', effects: { awareness: 4, setFlag: { neko_found_others: true } }, resultText: '你沿着屋顶跳跃——你的新身体比你想象的灵活得多。在神社的屋顶上，你遇到了另一条猫又。它看了你一眼——说：「新来的？理事会知道了吗？」', nextNodeId: 'start' },
+    { id: 'neko_play', text: '去便利店偷吃鱼', effects: { erosion: 3, setFlag: { neko_stole_fish: true } }, resultText: '你无法抵抗本能。你潜入便利店——用猫的速度偷了一条秋刀鱼。小翠看到了你——她尖叫了一声，然后大笑。「你变成了猫！太可爱了！」', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：魅魔 ──────────────────────────────────────────────
+
+const succubus_awakening = {
+  id: 'succubus_awakening',
+  scene: 'bar', dayMin: 3, dayMax: 6,
+  title: '魅魔觉醒',
+  narrative: '梦魇精华在你体内扩散。\n\n你感到一股暖流从小腹升起——扩散到全身。你的皮肤变得更光滑、更有光泽。你的身体比例开始微妙地变化——变得更吸引人。\n\n但真正的变化在内部。你能感受到周围人的欲望——像色彩缤纷的烟雾一样从他们身上飘出。你可以「吸收」这些欲望——把它变成自己的能量。',
+  stateConditions: { playerSpecies: 'succubus' },
+  choices: [
+    { id: 'succubus_feed', text: '吸收一个人的欲望能量', effects: { erosion: 8, awareness: 3, setFlag: { succubus_fed: true } }, resultText: '你选了一个人——一个孤独地坐在角落的男人。你走过去——不用说话。你的存在本身已经是一种诱惑。你「吸收」了他过剩的欲望——他会感到一阵空虚，但不会有真正的伤害。而你——你感到力量涌入。', nextNodeId: 'succubus_power' },
+    { id: 'succubus_control', text: '尝试控制自己的新能力', effects: { awareness: 6, erosion: -2, setFlag: { succubus_controlled: true } }, resultText: '你闭上眼睛——深呼吸。欲望的感知没有消失，但你学会了把它们隔离开。夜魅走到你面前——赞许地点头。「不错。大部分新人都在第一周就失控了。」', nextNodeId: 'start' },
+  ]
+};
+
+const succubus_power = {
+  id: 'succubus_power',
+  scene: 'bar', dayMin: 4, dayMax: 7,
+  title: '魅魔之力',
+  narrative: '你感受到了自己的力量。\n\n你可以让任何人对你产生好感——不只是欲望。你可以影响他们的决定、改写他们的喜好、甚至让他们爱上你。\n\n但每一次使用——你都离人性更远一步。',
+  stateConditions: { playerSpecies: 'succubus' },
+  choices: [
+    { id: 'succubus_charm', text: '对关键NPC使用魅惑能力', effects: { erosion: 6, awareness: 4, setFlag: { used_succubus_charm: true } }, resultText: '你选择了……对方看向你的眼神变了。那不是原本的他们——你改写了他们的一部分。你得到了需要的信息。但你也失去了一些东西。', nextNodeId: 'start' },
+    { id: 'succubus_resist', text: '拒绝使用能力', effects: { awareness: 6, setFlag: { succubus_refrained: true } }, resultText: '你离开了酒吧。夜魅看着你的背影——轻声说：「你会回来的。饥饿感——最终会战胜一切。」', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：龙娘 ──────────────────────────────────────────────
+
+const dragon_awakening = {
+  id: 'dragon_awakening',
+  scene: 'city_hall', dayMin: 5, dayMax: 7,
+  title: '龙之力',
+  narrative: '龙鳞萃取液在你的血管中燃烧。\n\n你的皮肤表面浮现出金色的鳞片——细密而坚硬。你的力量暴增——你单手握碎了手中的玻璃瓶。你的瞳孔变成了竖直的琥珀色。\n\n你感受到了——这座城市的「界线」。你可以看到现实的边缘——像一道微光的帷幕覆盖着一切。你可以撕开它。',
+  stateConditions: { playerSpecies: 'dragon' },
+  choices: [
+    { id: 'dragon_tear', text: '撕开现实的帷幕', effects: { erosion: 10, awareness: 10, setFlag: { tore_reality_veil: true } }, resultText: '你伸出手——爪——刺入空气中。帷幕发出了撕裂的声音。你看到另一边——真实的世界。怪异和人类混杂的街道——没有伪装、没有掩饰。理事会正在惊慌——他们知道你看到了。', nextNodeId: 'true_ending' },
+    { id: 'dragon_wait', text: '保留力量，等待时机', effects: { awareness: 5, setFlag: { dragon_waited: true } }, resultText: '你把力量压制了下来。你的眼睛恢复了正常的颜色。但你知道——你可以随时撕开这层伪装。你在等待最好的时机。', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：无性化 ────────────────────────────────────────────
+
+const neuter_perspective = {
+  id: 'neuter_perspective',
+  scene: 'shrine', dayMin: 3, dayMax: 6,
+  title: '无性的视角',
+  narrative: '你不再受到性别的束缚。\n\n世界在你眼中变得不同了——你不再被归类、不再被期待扮演某种角色。你可以更清晰地看到人们的本质——他们的性别只是一层外衣。\n\n狐铃看着你——她的眼神中带着敬畏。「你打破了界线。很少有人能做到。」',
+  stateConditions: { playerGender: 'neuter' },
+  choices: [
+    { id: 'neuter_insight', text: '利用这种视角看穿理事会的伪装', effects: { awareness: 8, setFlag: { neuter_insight_gained: true } }, resultText: '理事会成员在你的眼中不再是穿着西装的人类——他们是各种各样的怪物，披着人皮。你不用再被他们的表象欺骗。', nextNodeId: 'start' },
+    { id: 'neuter_guide', text: '帮助其他困惑于性别的人', effects: { awareness: 4, setFlag: { neuter_helped_others: true } }, resultText: '你开始在小镇中帮助那些对自己性别感到困惑的人。你成了他们的引路人——在一个一切都被定义好的世界里，你提供了一个「不定义」的选项。', nextNodeId: 'start' },
+  ]
+};
+
+// ─── TSF专属分支：双性 ──────────────────────────────────────────────
+
+const futanari_experience = {
+  id: 'futanari_experience',
+  scene: 'alley_night', dayMin: 3, dayMax: 6,
+  title: '双性的体验',
+  narrative: '你的身体现在同时拥有两性的特征。\n\n这不仅仅是身体的改变——你对世界的感知也变了。你能同时理解两种视角——不被单一性别的思维框架限制。\n\n但你也感受到——这个世界对「模糊」的恐惧。',
+  stateConditions: { playerGender: 'futanari' },
+  choices: [
+    { id: 'futa_embrace', text: '拥抱自己的双重身份', effects: { awareness: 4, setFlag: { embraced_duality: true } }, resultText: '你不再试图定义自己。你就是你——既不完全属于任何一边。这种「中间态」让你看到了许多人看不到的灰色地带。', nextNodeId: 'start' },
+    { id: 'futa_social', text: '测试社会对你的接受度', effects: { erosion: 4, awareness: 3, setFlag: { tested_social_bias: true } }, resultText: '结果如你所料——有些人排斥，有些人好奇，有些人完全不在乎。但你发现——那些最激烈排斥的人，往往是内心最不确定自己的人。', nextNodeId: 'start' },
+  ]
+};
+
 // ─── CYOA網絡導出 ───────────────────────────────────────────────────
 
 const cyoaNetwork: CYOANetwork = {
@@ -1605,6 +1766,25 @@ const cyoaNetwork: CYOANetwork = {
     hypnosis_route,
     hypnosis_memory_reveal,
     hypnosis_qa,
+    // TSF专属分支：史莱姆化
+    slime_transformation,
+    slime_secret_base,
+    slime_infiltration,
+    // TSF专属分支：吸血鬼
+    vampire_awakening,
+    vampire_guilt,
+    vampire_coven,
+    // TSF专属分支：猫又
+    nekomata_awakening,
+    // TSF专属分支：魅魔
+    succubus_awakening,
+    succubus_power,
+    // TSF专属分支：龙娘
+    dragon_awakening,
+    // TSF专属分支：无性化
+    neuter_perspective,
+    // TSF专属分支：双性
+    futanari_experience,
   },
 };
 

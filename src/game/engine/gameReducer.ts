@@ -493,6 +493,52 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         }];
       }
 
+      // TSF flag effects based on item flags
+      if (item.flags) {
+        const flagArr = item.flags as string[];
+
+        // 种族转换
+        const speciesMap: Record<string, string> = {
+          tsf_to_slime: 'slime', tsf_to_kitsune: 'kitsune',
+          tsf_to_vampire: 'vampire', tsf_to_succubus: 'succubus',
+          tsf_to_dragon: 'dragon', tsf_to_nekomata: 'nekomata',
+        };
+        for (const [flagKey, species] of Object.entries(speciesMap)) {
+          if (flagArr.includes(flagKey)) {
+            newState.flags = { ...newState.flags, player_species: species };
+            break;
+          }
+        }
+
+        // 性别转换
+        const genderMap: Record<string, string> = {
+          tsf_to_male: 'male', tsf_to_futanari: 'futanari', tsf_to_neuter: 'neuter',
+        };
+        if (flagArr.includes('tsf_gender')) {
+          for (const [flagKey, gender] of Object.entries(genderMap)) {
+            if (flagArr.includes(flagKey)) { newState.flags = { ...newState.flags, player_gender: gender }; break; }
+          }
+        }
+
+        // 年龄转换
+        if (flagArr.includes('tsf_age') || flagArr.includes('tsf_child')) {
+          if (flagArr.includes('tsf_child')) newState.flags = { ...newState.flags, player_age: 'child' };
+          else if (flagArr.includes('tsf_teen')) newState.flags = { ...newState.flags, player_age: 'teen' };
+          else if (flagArr.includes('tsf_elder')) newState.flags = { ...newState.flags, player_age: 'elder' };
+          else if (flagArr.includes('tsf_growth')) newState.flags = { ...newState.flags, player_age: 'adult' };
+        }
+
+        // 记录TSF变化到列表
+        const existingTransforms = Array.isArray(newState.flags.player_transformations)
+          ? [...newState.flags.player_transformations] : [];
+        const flagsToRecord = flagArr.filter(f => f.startsWith('tsf_'));
+        // 只记录以前没记录过的
+        for (const tf of flagsToRecord) {
+          if (!existingTransforms.includes(tf)) existingTransforms.push(tf);
+        }
+        newState.flags = { ...newState.flags, player_transformations: existingTransforms };
+      }
+
       // Remove consumed item
       if (item.quantity > 1) {
         const inv = [...newState.inventory];

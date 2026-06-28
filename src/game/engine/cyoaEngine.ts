@@ -25,7 +25,7 @@ export interface CYOANode {
   /** 节点级别的状态条件（不满足时节点不可见） */
   stateConditions?: {
     /** 需要特定的玩家性别 */
-    playerGender?: 'male' | 'female' | 'secret';
+    playerGender?: 'male' | 'female' | 'secret' | 'neuter' | 'futanari';
     /** 需要特定的玩家年龄 */
     playerAge?: 'adult' | 'teen' | 'child';
     /** 需要特定的玩家种族 */
@@ -95,7 +95,7 @@ export interface CYOAChoice {
     /** 需要设置的旗标 */
     hasFlag?: string;
     /** 新增：需要特定玩家状态 */
-    playerGender?: 'male' | 'female' | 'secret';
+    playerGender?: 'male' | 'female' | 'secret' | 'neuter' | 'futanari';
     playerAge?: 'adult' | 'teen' | 'child';
     playerSpecies?: string;  // 支持 'any_monster' 通配
     playerIdentity?: string;

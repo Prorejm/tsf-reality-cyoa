@@ -9,6 +9,7 @@ import EvidenceTracker from '@/components/EvidenceTracker';
 import CharacterStatusPanel from '@/components/CharacterStatusPanel';
 import SceneSelector from '@/components/SceneSelector';
 import PossessionUI from '@/components/PossessionUI';
+import TransformationUI from '@/components/TransformationUI';
 
 interface Hotspot {
   id: string;
@@ -95,6 +96,7 @@ const ExplorationScreen: React.FC = () => {
   const [showEvidence, setShowEvidence] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [showPossession, setShowPossession] = useState(false);
+  const [showTransformation, setShowTransformation] = useState(false);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
@@ -303,6 +305,9 @@ const ExplorationScreen: React.FC = () => {
         break;
       case 'possession':
         setShowPossession(true);
+        break;
+      case 'transformation':
+        setShowTransformation(true);
         break;
     }
   }, [dispatch, advanceTime, addNotification]);
@@ -538,6 +543,7 @@ const ExplorationScreen: React.FC = () => {
               ...(state.flags?.unlocked_possession || awareness >= 50
                 ? [{ key: 'possession', label: '🌀 附身', color: 'text-cyan-300' as const }]
                 : []),
+              { key: 'transformation', label: '🔄 TSF', color: 'text-pink-300' as const },
             ].map(btn => (
               <button
                 key={btn.key}
@@ -564,6 +570,9 @@ const ExplorationScreen: React.FC = () => {
       />
       {showPossession && (
         <PossessionUI onClose={() => setShowPossession(false)} />
+      )}
+      {showTransformation && (
+        <TransformationUI onClose={() => setShowTransformation(false)} />
       )}
     </div>
   );
