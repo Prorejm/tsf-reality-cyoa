@@ -28,7 +28,8 @@ jobs:
           node-version: 24
       - name: Install & Build
         run: |
-          npm install
+          npm install -g pnpm
+          pnpm install
           npx vite build --base=/tsf-reality-cyoa/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

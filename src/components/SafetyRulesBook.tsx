@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGame } from '@/game/engine/GameContext';
 import { SAFETY_RULES, type SafetyRule } from '@/game/data/safetyRules';
+import { RULE_TSF_NOVELS, getNovelByRuleId } from '@/game/data/ruleTSFNovels';
 import { cn } from '@/lib/utils';
 
 const RULES_PER_PAGE = 5;
@@ -41,6 +42,7 @@ const SafetyRulesBook: React.FC<SafetyRulesBookProps> = ({ isOpen, onClose }) =>
   const { state } = useGame();
   const [page, setPage] = useState(0);
   const [showCover, setShowCover] = useState(true);
+  const [expandedNovel, setExpandedNovel] = useState<number | null>(null);
 
   const completedNodes: string[] = state.flags?.completed_nodes ?? [];
   const erosionLevel = state.erosionLevel ?? 0;
@@ -233,6 +235,42 @@ const SafetyRulesBook: React.FC<SafetyRulesBookProps> = ({ isOpen, onClose }) =>
                     >
                       {rule.content}
                     </p>
+
+                    {/* TSF Novel preview (violated rules only) */}
+                    {isViolated && (() => {
+                      const novel = getNovelByRuleId(rule.id);
+                      if (!novel) return null;
+                      const isExpanded = expandedNovel === rule.id;
+                      return (
+                        <div className="mt-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedNovel(isExpanded ? null : rule.id);
+                            }}
+                            className="text-[9px] px-2 py-0.5 rounded
+                              bg-purple-700/40 text-purple-100 border border-purple-600/30
+                              hover:bg-purple-700/60 transition-colors"
+                          >
+                            {isExpanded ? '收起小说' : '查看 TSF 小说'}
+                          </button>
+                          {isExpanded && (
+                            <div className="mt-1 p-2 rounded bg-purple-900/20 border border-purple-700/30">
+                              <div className="text-[9px] text-purple-300/80 mb-1">
+                                <span className="font-bold">{novel.tsfTheme}</span>
+                                <span className="mx-1">|</span>
+                                <span className="italic">{novel.transformation}</span>
+                              </div>
+                              <p className="text-[10px] leading-relaxed text-purple-200/90"
+                                style={{ fontFamily: "'Times New Roman', 'Noto Serif SC', serif" }}
+                              >
+                                {novel.novelText}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })}
