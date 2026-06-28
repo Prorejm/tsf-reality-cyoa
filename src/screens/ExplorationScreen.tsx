@@ -4,6 +4,10 @@ import type { NpcId } from '@/game/engine/types';
 import { cn } from '@/lib/utils';
 import { useCYOA } from '@/game/hooks/useCYOA';
 import cyoaNetwork from '@/game/data/cyoaData';
+import CYOAFlowchart from '@/components/CYOAFlowchart';
+import EvidenceTracker from '@/components/EvidenceTracker';
+import CharacterStatusPanel from '@/components/CharacterStatusPanel';
+import SceneSelector from '@/components/SceneSelector';
 
 interface Hotspot {
   id: string;
@@ -86,6 +90,9 @@ const ExplorationScreen: React.FC = () => {
   const [notifications, setNotifications] = useState<GameNotification[]>([]);
   const [selectedHotspotIndex, setSelectedHotspotIndex] = useState<number | null>(null);
   const [showChoiceResult, setShowChoiceResult] = useState<string | null>(null);
+  const [showFlowchart, setShowFlowchart] = useState(false);
+  const [showEvidence, setShowEvidence] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
@@ -283,6 +290,15 @@ const ExplorationScreen: React.FC = () => {
       case 'affinity':
         dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'affinity' } });
         break;
+      case 'flowchart':
+        setShowFlowchart(true);
+        break;
+      case 'evidence':
+        setShowEvidence(true);
+        break;
+      case 'status':
+        setShowStatus(true);
+        break;
     }
   }, [dispatch, advanceTime, addNotification]);
 
@@ -358,6 +374,9 @@ const ExplorationScreen: React.FC = () => {
           {perceptionMode === 'resident' ? '常识' : '真实'}
         </button>
       </div>
+
+      {/* Scene Selector — horizontal scroll scene bar */}
+      <SceneSelector />
 
       {/* Scene Display */}
       <div className="px-4 pt-4 pb-2">
@@ -506,10 +525,11 @@ const ExplorationScreen: React.FC = () => {
               { key: 'time', label: '⏩ 推进', color: 'text-purple-300' },
               { key: 'inventory', label: '🎒 背包', color: 'text-blue-300' },
               { key: 'map', label: '🗺 地图', color: 'text-emerald-300' },
-              { key: 'phone', label: '📱 手机', color: 'text-amber-300' },
-              { key: 'journal', label: '📖 日志', color: 'text-pink-300' },
-              { key: 'calendar', label: '📅 日程', color: 'text-cyan-300' },
-              { key: 'affinity', label: '❤ 好感', color: 'text-rose-300' },
+              { key: 'flowchart', label: '📊 流程图', color: 'text-amber-300' },
+              { key: 'phone', label: '📱 手机', color: 'text-cyan-300' },
+              { key: 'calendar', label: '📅 日程', color: 'text-indigo-300' },
+              { key: 'evidence', label: '📋 证据', color: 'text-rose-300' },
+              { key: 'status', label: '👤 状态', color: 'text-purple-300' },
             ].map(btn => (
               <button
                 key={btn.key}
@@ -522,6 +542,18 @@ const ExplorationScreen: React.FC = () => {
           </div>
         </div>
       )}
+      {/* ── 叠加组件 ──────────────────────────────────────────── */}
+      {showFlowchart && (
+        <CYOAFlowchart onClose={() => setShowFlowchart(false)} />
+      )}
+      <EvidenceTracker
+        isOpen={showEvidence}
+        onClose={() => setShowEvidence(false)}
+      />
+      <CharacterStatusPanel
+        isOpen={showStatus}
+        onClose={() => setShowStatus(false)}
+      />
     </div>
   );
 };

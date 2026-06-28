@@ -99,15 +99,6 @@ function AppShell() {
     }
   }, [state.currentDay, state.currentPeriod, screen, prevScreen])
 
-  // Storyline: auto-advance scene based on day
-  useEffect(() => {
-    if (screen !== 'exploration') return;
-    const targetScene = STORY_SCENES[state.currentDay];
-    if (targetScene && state.currentScene !== targetScene) {
-      dispatch({ type: 'SET_SCENE', payload: targetScene });
-    }
-  }, [state.currentDay, state.currentScene, screen, dispatch]);
-
   // Bad End detection (erosion ≥ 100)
   const [badEndTriggered, setBadEndTriggered] = useState(false);
   useEffect(() => {
