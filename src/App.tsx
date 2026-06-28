@@ -17,6 +17,7 @@ import PhoneScreen from '@/screens/PhoneScreen'
 import { DayTransition } from '@/components/DayTransition'
 import { RealityBreak } from '@/components/RealityBreak'
 import { PerceptionToggle } from '@/components/PerceptionToggle'
+import { checkEndingConditions, ENDINGS } from '@/game/data/endingsData'
 
 export type ScreenId =
   | 'title' | 'exploration' | 'dialogue' | 'observation' | 'puzzle'
@@ -106,10 +107,28 @@ function AppShell() {
       setBadEndTriggered(true);
       dispatch({ type: 'ADD_BAD_END', payload: { id: 'bad_end_erosion', name: '侵蚀殆尽', triggerDay: state.currentDay, description: '你的意识被"常识"完全改写。你不再记得自己曾经是谁。现在你只是这座城市的一个普通居民。永远。' } });
       setTimeout(() => {
+        dispatch({ type: 'SET_FLAG', payload: { key: '_current_ending', value: 'bad_erosion_total' } });
         dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'ending' } });
       }, 2000);
     }
   }, [state.erosionLevel, screen, badEndTriggered, dispatch]);
+
+  // Ending auto-detection — when exploration screen, check conditions
+  const [endingTriggered, setEndingTriggered] = useState(false);
+  useEffect(() => {
+    if (screen !== 'exploration') return;
+    if (endingTriggered) return;
+    const matched = checkEndingConditions(state, ENDINGS);
+    if (matched.length > 0) {
+      setEndingTriggered(true);
+      const ending = matched[0];
+      dispatch({ type: 'SET_FLAG', payload: { key: '_current_ending', value: ending.id } });
+      dispatch({ type: 'SET_ENDING', payload: ending.id });
+      setTimeout(() => {
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'ending' } });
+      }, 2000);
+    }
+  }, [state, screen, endingTriggered, dispatch]);
 
   // Reality break
   const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({ active: false, intensity: 'mild' })

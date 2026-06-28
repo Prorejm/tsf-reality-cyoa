@@ -10,6 +10,7 @@ import CharacterStatusPanel from '@/components/CharacterStatusPanel';
 import SceneSelector from '@/components/SceneSelector';
 import PossessionUI from '@/components/PossessionUI';
 import TransformationUI from '@/components/TransformationUI';
+import MissionTracker from '@/components/MissionTracker';
 
 interface Hotspot {
   id: string;
@@ -97,6 +98,7 @@ const ExplorationScreen: React.FC = () => {
   const [showStatus, setShowStatus] = useState(false);
   const [showPossession, setShowPossession] = useState(false);
   const [showTransformation, setShowTransformation] = useState(false);
+  const [showMissionTracker, setShowMissionTracker] = useState(false);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
@@ -308,6 +310,9 @@ const ExplorationScreen: React.FC = () => {
         break;
       case 'transformation':
         setShowTransformation(true);
+        break;
+      case 'missions':
+        setShowMissionTracker(true);
         break;
     }
   }, [dispatch, advanceTime, addNotification]);
@@ -538,6 +543,7 @@ const ExplorationScreen: React.FC = () => {
               { key: 'flowchart', label: '📊 流程图', color: 'text-amber-300' },
               { key: 'phone', label: '📱 手机', color: 'text-cyan-300' },
               { key: 'calendar', label: '📅 日程', color: 'text-indigo-300' },
+              { key: 'missions', label: '📋 任务', color: 'text-lime-300' },
               { key: 'evidence', label: '📋 证据', color: 'text-rose-300' },
               { key: 'status', label: '👤 状态', color: 'text-purple-300' },
               ...(state.flags?.unlocked_possession || awareness >= 50
@@ -574,6 +580,10 @@ const ExplorationScreen: React.FC = () => {
       {showTransformation && (
         <TransformationUI onClose={() => setShowTransformation(false)} />
       )}
+      <MissionTracker
+        isOpen={showMissionTracker}
+        onClose={() => setShowMissionTracker(false)}
+      />
     </div>
   );
 };
