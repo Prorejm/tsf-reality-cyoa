@@ -21,30 +21,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./tsf-reality-cyoa
     steps:
       - uses: actions/checkout@v4
-      
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      
-      - name: Install dependencies
-        run: npm install
-        
-      - name: Build
-        run: npx vite build --base=/tsf-reality-cyoa/
-        
+      - name: Install & Build
+        run: |
+          npm install
+          npx vite build --base=/tsf-reality-cyoa/
       - uses: actions/configure-pages@v4
+      - uses: actions/upload-pages-artifact@v3
         with:
-          static_site_generator: vite
-          
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './tsf-reality-cyoa/dist'
-          
+          path: './dist'
       - id: deployment
         uses: actions/deploy-pages@v4
