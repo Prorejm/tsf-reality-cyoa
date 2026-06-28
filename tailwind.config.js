@@ -110,6 +110,10 @@ module.exports = {
           '0%, 100%': { boxShadow: '0 0 3px rgba(251, 191, 36, 0.3)' },
           '50%': { boxShadow: '0 0 15px rgba(251, 191, 36, 0.8)' },
         },
+        "slide-in": {
+          '0%': { opacity: '0', transform: 'translateX(20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -119,6 +123,7 @@ module.exports = {
         "erosion-pulse": "erosion-pulse 2s ease-in-out infinite",
         "perception-flicker": "perception-flicker 0.8s ease-in-out",
         "item-glow": "item-glow 2s ease-in-out infinite",
+        "slide-in": "slide-in 0.3s ease-out",
       },
       fontFamily: {
         game: ['"Noto Sans SC"', '"Source Han Sans"', 'sans-serif'],

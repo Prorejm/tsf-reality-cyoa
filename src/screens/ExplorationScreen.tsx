@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useGame } from '@/game/engine/GameContext';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useGame, useAdvanceTime } from '@/game/engine/GameContext';
 import type { NpcId } from '@/game/engine/types';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +12,12 @@ interface Hotspot {
   perceptionRequired?: number;
 }
 
+interface GameNotification {
+  id: string;
+  text: string;
+  type: 'info' | 'discovery' | 'warning' | 'system';
+}
+
 const TIME_PERIOD_LABELS: Record<string, string> = {
   morning: '早晨',
   afternoon: '下午',
@@ -19,312 +25,347 @@ const TIME_PERIOD_LABELS: Record<string, string> = {
   night: '深夜',
 };
 
-const COGNITION_LABELS: Record<string, string> = {
-  outsider: '局外人',
-  aware: '察觉',
-  wavering: '动摇',
-  assimilated: '同化',
+// Scene descriptions per sceneId
+const SCENE_DESCRIPTIONS: Record<string, string> = {
+  home_bedroom: '你站在自己熟悉的房间里。窗外的街道看起来和平常没什么不同——至少表面上是这样。',
+  town_center: '小镇的中心广场。喷泉的水声和鸽子的鸣叫营造出一种安宁的氛围，但你能感觉到有些东西不对劲。',
+  shrine: '古老的神社坐落在一座小山丘上。微风拂过，风铃发出清脆的声响。空气中弥漫着一种若有若无的异香。',
+  hospital: '白色的医院大楼。消毒水的气味中混杂着某种甜腻的味道，让人有些头晕。',
+  school: '放学后的校园空无一人。操场上有一个孤独的影子——或许不是你认识的那个人。',
+  alley_night: '昏暗的小巷。墙上的涂鸦在黑暗中似乎微微发着光。远处传来奇怪的摩擦声。',
+};
+
+const SCENE_CHOICES: Record<string, string[]> = {
+  home_bedroom: ['检查房间', '看向窗外', '打开手机', '出门'],
+  town_center: ['观察路人', '查看公告栏', '进入商店', '继续探索'],
+  shrine: ['参拜神社', '查看绘马', '寻找巫女', '探索树林'],
+  hospital: ['询问前台', '查看病历室', '走向病房', '寻找出口'],
+  school: ['进入教室', '走向体育馆', '查看图书馆', '寻找校医'],
+  alley_night: ['调查涂鸦', '追踪声音', '查看垃圾桶', '离开小巷'],
 };
 
 const ExplorationScreen: React.FC = () => {
   const { state, dispatch } = useGame();
+  const advanceTime = useAdvanceTime();
+  
+  // === Flat state access (compatible with engine) ===
+  const day = state.currentDay ?? 1;
+  const period = state.currentPeriod ?? 'morning';
+  const awareness = state.awarenessLevel ?? 0;
+  const erosion = state.erosionLevel ?? 0;
+  const perceptionMode = state.perceptionMode ?? 'resident';
+  const currentScene = state.currentScene ?? 'home_bedroom';
+  const inventory = state.inventory ?? [];
+
   const [displayedText, setDisplayedText] = useState('');
-  const [textIndex, setTextIndex] = useState(0);
   const [showActions, setShowActions] = useState(false);
-  const [activeHotspots, setActiveHotspots] = useState<Hotspot[]>([]);
-  const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
-  const [showNpcs, setShowNpcs] = useState(false);
-  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [transitioning, setTransitioning] = useState(false);
+  const [notifications, setNotifications] = useState<GameNotification[]>([]);
+  const [selectedHotspotIndex, setSelectedHotspotIndex] = useState<number | null>(null);
 
-  const day = state?.time?.day ?? 1;
-  const period = state?.time?.period ?? 'morning';
-  const awareness = state?.cognition?.realityAwareness ?? 0;
-  const erosion = state?.cognition?.erosionLevel ?? 0;
-  const stage = state?.cognition?.stage ?? 'outsider';
-  const currentScene = state?.zone?.currentScene ?? 'unknown';
-  const perceptionMode = (state as any)?.perceptionMode ?? 'resident';
-  const sceneDescription =
-    perceptionMode === 'truth'
-      ? `【真相视角】你看到的事物表象之下暗流涌动……`
-      : `你站在这个看似普通的街道上，周围的一切都井然有序。`;
+  // Get scene description
+  const sceneDescription = useMemo(() => {
+    const base = SCENE_DESCRIPTIONS[currentScene] ?? '一个普通的场景。';
+    if (perceptionMode === 'truth') {
+      return `【真相】${base.replace(/正常|普通/g, '⋯表面之下暗流涌动')}`;
+    }
+    return base;
+  }, [currentScene, perceptionMode]);
 
-  // 模拟场景描述文本，使用打字机效果
-  const fullText = sceneDescription;
+  // Local choices for this scene
+  const sceneActions = useMemo(() => {
+    return SCENE_CHOICES[currentScene] ?? ['探索', '调查', '对话', '前往下个场景'];
+  }, [currentScene]);
 
+  // Hotspots for this scene
+  const hotspots = useMemo((): Hotspot[] => {
+    const base: Hotspot[] = [
+      { id: 'h1', x: 25, y: 35, label: '奇怪的涂鸦', description: '墙上有一些你不认识的符号……', perceptionRequired: 0 },
+      { id: 'h2', x: 60, y: 50, label: '可疑的痕迹', description: '地上有不寻常的拖拽痕迹。', perceptionRequired: 10 },
+      { id: 'h3', x: 40, y: 70, label: '异常的声音', description: '你听到了一种不自然的、规律性的声音。', perceptionRequired: 20 },
+      { id: 'h4', x: 75, y: 30, label: '错觉？', description: '眼角的余光中，似乎有什么东西移动了。', perceptionRequired: 30 },
+    ];
+    return base.filter(h => awareness >= (h.perceptionRequired ?? 0));
+  }, [awareness]);
+
+  // Typewriter effect
   useEffect(() => {
     setDisplayedText('');
-    setTextIndex(0);
     setShowActions(false);
-    setSelectedHotspot(null);
-    setActiveHotspots(generateHotspots(awareness));
+    setSelectedHotspotIndex(null);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setDisplayedText(sceneDescription.slice(0, i));
+      if (i >= sceneDescription.length) {
+        clearInterval(interval);
+        setShowActions(true);
+      }
+    }, 30);
+    return () => clearInterval(interval);
+  }, [sceneDescription]);
 
-    typewriterRef.current = setInterval(() => {
-      setTextIndex((prev) => prev + 1);
-    }, 40);
+  // Notification auto-dismiss
+  const addNotification = useCallback((text: string, type: GameNotification['type'] = 'info') => {
+    const id = `n-${Date.now()}`;
+    setNotifications(prev => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  }, []);
 
-    return () => {
-      if (typewriterRef.current) clearInterval(typewriterRef.current);
-    };
-  }, [currentScene, perceptionMode, awareness]);
+  // === Action handlers ===
+  const handleAction = useCallback((action: string) => {
+    switch (action) {
+      case 'explore': case '探索':
+      case '检查房间': case '观察路人': case '参拜神社':
+      case '询问前台': case '进入教室': case '调查涂鸦':
+        // Generic explore: add discovery + awareness
+        dispatch({ type: 'APPLY_AWARENESS', payload: 5 });
+        dispatch({
+          type: 'ADD_DISCOVERY',
+          payload: { id: `disc_${Date.now()}`, title: '发现异常', description: `你在${currentScene}发现了一些不寻常的事物。`, category: 'reality_anomaly' },
+        });
+        addNotification('洞察力略微提升 (+5)', 'discovery');
+        break;
 
-  useEffect(() => {
-    if (textIndex < fullText.length) {
-      setDisplayedText(fullText.slice(0, textIndex + 1));
-    } else {
-      if (typewriterRef.current) clearInterval(typewriterRef.current);
-      setShowActions(true);
+      case 'investigate': case '调查':
+      case '查看公告栏': case '查看绘马': case '查看病历室':
+      case '走向体育馆': case '追踪声音':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'observation' } });
+        break;
+
+      case 'dialogue': case '对话':
+      case '寻找巫女': case '寻找校医': case '寻找出口':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'dialogue' } });
+        break;
+
+      case 'next_scene': case '前往下个场景':
+      case '出门': case '继续探索': case '离开小巷':
+        advanceTime();
+        addNotification('时间流逝...', 'system');
+        // Cycle through scenes if we have time change
+        break;
+
+      case '看向窗外':
+        addNotification('街道上有一个戴着面具的身影一闪而过...', 'warning');
+        dispatch({ type: 'APPLY_EROSION', payload: 3 });
+        dispatch({ type: 'APPLY_AWARENESS', payload: 2 });
+        break;
+
+      case '打开手机': case '进入商店': case '进入商店':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'phone' } });
+        break;
+
+      case '查看图书馆':
+        dispatch({ type: 'APPLY_AWARENESS', payload: 8 });
+        addNotification('你发现了一些关于这座城镇历史的记录...', 'discovery');
+        break;
+
+      case '查看垃圾桶':
+        dispatch({ type: 'APPLY_EROSION', payload: 2 });
+        addNotification('垃圾桶里有一些令人不安的发现...', 'warning');
+        break;
+
+      case 'inventory': case '打开背包':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'inventory' } });
+        break;
+
+      case 'calendar': case '查看日程':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'calendar' } });
+        break;
+
+      default:
+        addNotification(`你尝试了「${action}」`, 'info');
+        break;
     }
-  }, [textIndex, fullText]);
+  }, [dispatch, advanceTime, currentScene, addNotification]);
 
-  const generateHotspots = useCallback(
-    (aware: number): Hotspot[] => {
-      const base: Hotspot[] = [
-        { id: 'h1', x: 25, y: 35, label: '奇怪的涂鸦', description: '墙上有一些你不认识的符号……', perceptionRequired: 0 },
-        { id: 'h2', x: 60, y: 50, label: '路边的广告牌', description: '广告牌上的明星面孔看起来不太自然。', perceptionRequired: 10 },
-        { id: 'h3', x: 40, y: 70, label: '下水道井盖', description: '下水道里隐约传来微弱的低语声。', perceptionRequired: 20 },
-        { id: 'h4', x: 75, y: 30, label: '灯柱的影子', description: '这根灯柱的影子方向与周围的灯光不一致。', perceptionRequired: 30 },
-      ];
-      return base.filter((h) => aware >= (h.perceptionRequired ?? 0));
-    },
-    [],
-  );
+  // Quick action button rows
+  const handleQuickAction = useCallback((action: string) => {
+    switch (action) {
+      case 'time':
+        advanceTime();
+        addNotification('时间流逝...', 'system');
+        break;
+      case 'inventory':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'inventory' } });
+        break;
+      case 'map':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'map' } });
+        break;
+      case 'phone':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'phone' } });
+        break;
+      case 'journal':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'journal' } });
+        break;
+      case 'calendar':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'calendar' } });
+        break;
+      case 'affinity':
+        dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'affinity' } });
+        break;
+    }
+  }, [dispatch, advanceTime, addNotification]);
 
-  const handleHotspotClick = useCallback(
-    (hotspot: Hotspot) => {
-      setSelectedHotspot(hotspot);
+  const handleHotspotClick = useCallback((idx: number) => {
+    setSelectedHotspotIndex(idx);
+    const hs = hotspots[idx];
+    if (hs) {
+      addNotification(`发现: ${hs.label}`, 'discovery');
+      dispatch({ type: 'APPLY_AWARENESS', payload: 3 });
       dispatch({
         type: 'ADD_DISCOVERY',
-        payload: {
-          id: `discovery_${hotspot.id}_${Date.now()}`,
-          name: hotspot.label,
-          description: hotspot.description,
-          category: 'reality_anomaly',
-          discoveredOnDay: day,
-          discoveredInScene: currentScene,
-          read: false,
-          content: hotspot.description,
-          isCritical: false,
-        } as any,
+        payload: { id: `disc_${hs.id}_${Date.now()}`, title: hs.label, description: hs.description, category: 'reality_anomaly' },
       });
-    },
-    [dispatch, day, currentScene],
-  );
+    }
+  }, [hotspots, dispatch, addNotification]);
 
-  const handleAction = useCallback(
-    (action: string) => {
-      switch (action) {
-        case 'explore':
-          dispatch({ type: 'EXPLORE_SCENE', payload: currentScene });
-          break;
-        case 'investigate':
-          setShowActions(false);
-          dispatch({
-            type: 'SET_FLAG',
-            payload: { key: '_screen', value: 'observation' },
-          });
-          break;
-        case 'dialogue':
-          setShowNpcs(!showNpcs);
-          break;
-        case 'next_scene':
-          setTransitioning(true);
-          setTimeout(() => {
-            setTransitioning(false);
-            dispatch({ type: 'TIME_ADVANCE' });
-          }, 500);
-          break;
-        case 'inventory':
-          dispatch({
-            type: 'SET_FLAG',
-            payload: { key: '_screen', value: 'inventory' },
-          });
-          break;
-        case 'calendar':
-          dispatch({
-            type: 'SET_FLAG',
-            payload: { key: '_screen', value: 'calendar' },
-          });
-          break;
-        case 'phone':
-          dispatch({
-            type: 'SET_FLAG',
-            payload: { key: '_screen', value: 'phone' },
-          });
-          break;
-      }
-    },
-    [dispatch, currentScene, showNpcs],
-  );
-
-  const handleNpcInteract = useCallback(
-    (npcId: NpcId) => {
-      dispatch({
-        type: 'SET_FLAG',
-        payload: { key: '_dialogue_npc', value: npcId },
-      });
-      dispatch({
-        type: 'SET_FLAG',
-        payload: { key: '_screen', value: 'dialogue' },
-      });
-    },
-    [dispatch],
-  );
-
-  // 切换认知视角
-  const togglePerception = useCallback(() => {
-    dispatch({ type: 'SWITCH_PERCEPTION' });
-  }, [dispatch]);
+  // Erosion warning
+  useEffect(() => {
+    if (erosion >= 70 && erosion < 80) {
+      addNotification('侵蚀值偏高——你的现实感知正在发生变化...', 'warning');
+    } else if (erosion >= 50 && erosion < 55) {
+      addNotification('你开始感觉到这个世界的"裂缝"...', 'warning');
+    }
+  }, [erosion, addNotification]);
 
   return (
-    <div
-      className={cn(
-        'relative min-h-screen bg-gradient-to-b from-gray-900 via-purple-950/30 to-gray-900',
-        'game-container',
-        transitioning && 'screen-transition screen-enter',
+    <div className="relative min-h-screen bg-gradient-to-b from-gray-900 via-purple-950/30 to-gray-900">
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-xs">
+          {notifications.map(n => (
+            <div
+              key={n.id}
+              className={cn(
+                'px-4 py-2 rounded-lg text-xs font-game tracking-wider animate-slide-in shadow-lg',
+                n.type === 'discovery' && 'bg-blue-900/80 border border-blue-500/30 text-blue-200',
+                n.type === 'warning' && 'bg-amber-900/80 border border-amber-500/30 text-amber-200',
+                n.type === 'system' && 'bg-purple-900/80 border border-purple-500/30 text-purple-200',
+                n.type === 'info' && 'bg-gray-800/80 border border-gray-600/30 text-gray-300',
+              )}
+            >
+              {n.text}
+            </div>
+          ))}
+        </div>
       )}
-    >
-      {/* 认知切换按钮 */}
-      <button
-        onClick={togglePerception}
-        className="perception-toggle"
-        title={perceptionMode === 'resident' ? '切换至真相视角' : '切换至居民视角'}
-      >
-        <span
+
+      {/* Status Bar */}
+      <div className="sticky top-0 z-40 flex items-center gap-3 px-4 py-2 bg-black/60 backdrop-blur-sm border-b border-white/5">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-gray-500 tracking-wider">D{day}</span>
+          <span className="text-[10px] text-amber-400/80">{TIME_PERIOD_LABELS[period]}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-16 h-1.5 rounded-full bg-gray-700 overflow-hidden">
+            <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${awareness}%` }} />
+          </div>
+          <span className="text-[9px] text-blue-300/70">{awareness}%</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-16 h-1.5 rounded-full bg-gray-700 overflow-hidden">
+            <div className="h-full bg-pink-500 rounded-full transition-all" style={{ width: `${erosion}%` }} />
+          </div>
+          <span className="text-[9px] text-pink-300/70">{erosion}%</span>
+        </div>
+        <button
+          onClick={() => dispatch({ type: 'SWITCH_PERCEPTION' })}
           className={cn(
-            'text-xs font-bold tracking-wider',
-            perceptionMode === 'truth' ? 'text-blue-300' : 'text-gray-400',
+            'ml-auto px-2 py-0.5 rounded text-[9px] tracking-wider font-bold transition-all',
+            perceptionMode === 'truth' ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' : 'bg-gray-700/50 text-gray-400 border border-gray-600/30',
           )}
         >
           {perceptionMode === 'resident' ? '常识' : '真实'}
-        </span>
-      </button>
-
-      {/* 顶部状态栏 */}
-      <div className="status-bar mb-4">
-        <div className="flex items-center gap-2">
-          <span className="status-label">天数</span>
-          <span className="status-value text-gray-100">
-            第 {day} 日
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="status-label">时段</span>
-          <span className="status-value text-amber-300">
-            {TIME_PERIOD_LABELS[period] ?? period}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="status-label">认知</span>
-          <span className={cn('status-value', awareness > 50 ? 'text-blue-400' : 'text-gray-100')}>
-            {awareness}%
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="status-label">侵蚀</span>
-          <span className={cn('status-value', erosion > 50 ? 'text-pink-400' : 'text-gray-100')}>
-            {erosion}%
-          </span>
-        </div>
-        <div className="flex-1 text-right">
-          <span className="text-[10px] text-gray-500">{COGNITION_LABELS[stage]}</span>
-        </div>
+        </button>
       </div>
 
-      {/* 场景标题 */}
-      <div className="mb-3">
-        <h2 className="font-title text-2xl text-purple-200 tracking-wider">
-          {currentScene}
-        </h2>
-        <p className="text-xs text-gray-500 mt-1">
-          {perceptionMode === 'resident' ? '居民视角' : '真相视角'}
-        </p>
-      </div>
-
-      {/* 叙事文本 + 打字机效果 */}
-      <div className="typewriter-box mb-4 min-h-[120px]">
-        <p className="narrative-text text-sm md:text-base leading-relaxed">
-          {displayedText}
-          {textIndex < fullText.length && <span className="typewriter-cursor" />}
-        </p>
-      </div>
-
-      {/* 观察热点区域 */}
-      {showActions && activeHotspots.length > 0 && (
-        <div className="relative mb-4 p-4 bg-black/40 rounded-lg border border-white/5">
-          <p className="text-xs text-gray-400 mb-2 tracking-wider">
-            你注意到了一些值得留意的细节：
+      {/* Scene Display */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="relative mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-purple-900/30 via-gray-900 to-pink-900/20 border border-white/5 min-h-[120px] p-4">
+          {/* Scene name */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-2 h-2 rounded-full bg-purple-400/60" />
+            <h2 className="text-sm font-bold text-purple-200 tracking-wider">
+              {currentScene.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+            </h2>
+          </div>
+          
+          {/* Typewriter narrative text */}
+          <p className="text-sm text-gray-300 leading-relaxed">
+            {displayedText}
+            {!showActions && <span className="animate-pulse text-purple-400">▌</span>}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {activeHotspots.map((hotspot) => (
+        </div>
+
+        {/* Hotspots */}
+        {showActions && hotspots.length > 0 && (
+          <div className="mb-3">
+            <p className="text-[10px] text-gray-500 tracking-wider mb-1.5">▸ 值得留意的细节</p>
+            <div className="flex flex-wrap gap-1.5">
+              {hotspots.map((hs, i) => (
+                <button
+                  key={hs.id}
+                  onClick={() => handleHotspotClick(i)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-[11px] transition-all',
+                    selectedHotspotIndex === i
+                      ? 'bg-amber-500/20 border border-amber-400/30 text-amber-300'
+                      : 'bg-white/5 border border-white/10 text-gray-400 hover:bg-white/10 hover:text-gray-200',
+                  )}
+                >
+                  {hs.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Scene-specific actions (when typing done) */}
+      {showActions && (
+        <div className="px-4 pb-20">
+          <p className="text-[10px] text-gray-500 tracking-wider mb-2">▸ 行動</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {sceneActions.map((action, i) => (
               <button
-                key={hotspot.id}
-                onClick={() => handleHotspotClick(hotspot)}
+                key={i}
+                onClick={() => handleAction(action)}
                 className={cn(
-                  'px-3 py-1.5 rounded-md text-xs transition-all duration-200',
-                  selectedHotspot?.id === hotspot.id
-                    ? 'bg-amber-500/20 border border-amber-400/30 text-amber-300'
-                    : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white',
+                  'px-3 py-2.5 rounded-lg text-xs font-game tracking-wider transition-all text-left',
+                  'border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-gray-300 hover:text-white',
                 )}
               >
-                {hotspot.label}
-              </button>
-            ))}
-          </div>
-          {selectedHotspot && (
-            <div className="mt-3 p-3 bg-amber-500/5 rounded border border-amber-500/10">
-              <p className="text-xs text-amber-200/80">{selectedHotspot.description}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* NPC 互动列表 */}
-      {showNpcs && (
-        <div className="mb-4 p-3 bg-black/40 rounded-lg border border-blue-500/10">
-          <p className="text-xs text-blue-300/70 mb-2 tracking-wider">
-            可互动的角色：
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {/* 模拟NPC列表 */}
-            {['kitsune_miko', 'alraune_florist', 'slime_clerk'].map((npcId) => (
-              <button
-                key={npcId}
-                onClick={() => handleNpcInteract(npcId)}
-                className="px-3 py-1.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-xs text-blue-200 hover:bg-blue-500/20 transition-all duration-200"
-              >
-                {npcId === 'kitsune_miko' ? '狐鈴' : npcId === 'alraune_florist' ? '花音' : '小翠'}
+                {action}
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {/* 底部操作按钮 */}
+      {/* Quick action bar */}
       {showActions && (
-        <div className="mt-auto grid grid-cols-2 gap-2 pb-4">
-          <button onClick={() => handleAction('explore')} className="choice-button">
-            探索
-          </button>
-          <button onClick={() => handleAction('investigate')} className="choice-button awareness">
-            调查
-          </button>
-          <button onClick={() => handleAction('dialogue')} className="choice-button">
-            对话
-          </button>
-          <button onClick={() => handleAction('next_scene')} className="choice-button">
-            前往下个场景
-          </button>
-          <button onClick={() => handleAction('inventory')} className="choice-button">
-            打开背包
-          </button>
-          <button onClick={() => handleAction('calendar')} className="choice-button">
-            查看日程
-          </button>
-          <button onClick={() => handleAction('phone')} className="choice-button bg-amber-900/20 border-amber-500/30 hover:bg-amber-800/30 flex items-center gap-2">
-            <span className="text-lg">📱</span>
-            <span>手机</span>
-          </button>
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-gray-900/90 backdrop-blur-md border-t border-white/5">
+          <div className="flex items-center justify-around px-2 py-2">
+            {[
+              { key: 'time', label: '⏩ 推进', color: 'text-purple-300' },
+              { key: 'inventory', label: '🎒 背包', color: 'text-blue-300' },
+              { key: 'map', label: '🗺 地图', color: 'text-emerald-300' },
+              { key: 'phone', label: '📱 手机', color: 'text-amber-300' },
+              { key: 'journal', label: '📖 日志', color: 'text-pink-300' },
+              { key: 'calendar', label: '📅 日程', color: 'text-cyan-300' },
+              { key: 'affinity', label: '❤ 好感', color: 'text-rose-300' },
+            ].map(btn => (
+              <button
+                key={btn.key}
+                onClick={() => handleQuickAction(btn.key)}
+                className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+              >
+                <span className={`text-xs ${btn.color}`}>{btn.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

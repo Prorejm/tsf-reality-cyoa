@@ -432,7 +432,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     // ── Erosion & Awareness ────────────────────────────────────────
     case 'APPLY_EROSION': {
-      const { amount, reason } = action.payload;
+      const raw = action.payload;
+      const amount = typeof raw === 'number' ? raw : raw.amount;
+      const reason = typeof raw === 'number' ? '' : (raw.reason ?? '');
       const newErosion = clamp(state.erosionLevel + amount, 0, 100);
       return {
         ...state,
@@ -451,8 +453,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'APPLY_AWARENESS': {
-      const { amount, reason } = action.payload;
-      const newAwareness = clamp(state.awarenessLevel + amount, 0, 100);
+      const raw2 = action.payload;
+      const amount2 = typeof raw2 === 'number' ? raw2 : raw2.amount;
+      const reason2 = typeof raw2 === 'number' ? '' : (raw2.reason ?? '');
+      const newAwareness = clamp(state.awarenessLevel + amount2, 0, 100);
       return {
         ...state,
         awarenessLevel: newAwareness,
@@ -460,7 +464,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.narrativeLog,
           {
             type: 'awareness',
-            content: `认知度 ${amount >= 0 ? '+' : ''}${amount}: ${reason}`,
+            content: `认知度 ${amount2 >= 0 ? '+' : ''}${amount2}: ${reason2}`,
             day: state.currentDay,
             period: state.currentPeriod,
             timestamp: Date.now(),
