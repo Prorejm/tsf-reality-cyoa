@@ -117,8 +117,7 @@ const ExplorationScreen: React.FC = () => {
   const handleAction = useCallback((action: string) => {
     switch (action) {
       case 'explore': case '探索':
-      case '检查房间': case '观察路人': case '参拜神社':
-      case '询问前台': case '进入教室': case '调查涂鸦':
+      case '检查房间': case '进入商店':
         // Generic explore: add discovery + awareness
         dispatch({ type: 'APPLY_AWARENESS', payload: 5 });
         dispatch({
@@ -128,14 +127,67 @@ const ExplorationScreen: React.FC = () => {
         addNotification('洞察力略微提升 (+5)', 'discovery');
         break;
 
-      case 'investigate': case '调查':
-      case '查看公告栏': case '查看绘马': case '查看病历室':
+      // Scene-specific actions with item rewards
+      case '观察路人':
+        dispatch({ type: 'APPLY_AWARENESS', payload: 3 });
+        addNotification('你注意到路人的举止有些……不自然。', 'discovery');
+        break;
+
+      case '参拜神社':
+        dispatch({ type: 'APPLY_AWARENESS', payload: 5 });
+        dispatch({ type: 'APPLY_EROSION', payload: -3 }); // soothe
+        dispatch({ type: 'ADD_ITEM', payload: { id: 'amulet_protect', name: '守护护符', nameCN: '守护护符', type: 'equipment', quantity: 1, maxStack: 1, usable: true, description: '神社的护身符。能减轻"常识改写"的影响。', icon: '🪬' } });
+        addNotification('你获得了一个守护护符！侵蚀略微减轻。', 'discovery');
+        break;
+
+      case '查看绘马':
+        dispatch({ type: 'ADD_DISCOVERY', payload: { id: `disc_ema_${Date.now()}`, title: '绘马的留言', description: '绘马上写着:"我不想忘记自己是谁。"落款是一个狐狸爪印。', category: 'identity_trace' } });
+        addNotification('你发现了一块可疑的绘马…', 'discovery');
+        break;
+
+      case '查看公告栏':
+        dispatch({ type: 'ADD_DISCOVERY', payload: { id: `disc_bulletin_${Date.now()}`, title: '公告栏异常', description: '公告栏上的日期全部被改写了。你清楚地记得今天不是这个日期。', category: 'reality_anomaly' } });
+        dispatch({ type: 'APPLY_AWARENESS', payload: 8 });
+        addNotification('日期不对… 你的记忆没有错。', 'warning');
+        break;
+
+      case '进入教室':
+        dispatch({ type: 'ADD_ITEM', payload: { id: 'photo_old', name: 'Old Photograph', nameCN: '旧照片', type: 'clue', quantity: 1, maxStack: 1, usable: false, description: '一张泛黄的照片，上面的人看起来和现在镇上的人一模一样。', icon: '📸' } });
+        addNotification('你找到了一张旧照片… 上面的人你认识。', 'discovery');
+        break;
+
+      case '查看图书馆':
+        dispatch({ type: 'APPLY_AWARENESS', payload: 8 });
+        dispatch({ type: 'ADD_ITEM', payload: { id: 'note_stranger', name: 'Mysterious Note', nameCN: '神秘便条', type: 'key_item', quantity: 1, maxStack: 1, usable: false, description: '"不要相信镇长的话。他已经被替换了。——K"', icon: '📝' } });
+        addNotification('你在一本书里发现了一张便条！', 'discovery');
+        break;
+
+      case '调查涂鸦':
+        dispatch({ type: 'APPLY_AWARENESS', payload: 5 });
+        dispatch({ type: 'APPLY_EROSION', payload: 3 });
+        dispatch({ type: 'ADD_ITEM', payload: { id: 'mirror_antique', name: 'Antique Mirror', nameCN: '古镜', type: 'tsf_trigger', quantity: 1, maxStack: 1, usable: true, description: '涂鸦旁边放着一面古老的铜镜。镜中的倒影不对劲。', icon: '🪞' } });
+        addNotification('你在涂鸦旁发现了一面古镜… 镜中的你动作慢了半拍。', 'warning');
+        break;
+
+      case '调查':
+      case '查看病历室': case '查看垃圾桶':
       case '走向体育馆': case '追踪声音':
         dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'observation' } });
         break;
 
-      case 'dialogue': case '对话':
+      case '对话':
       case '寻找巫女': case '寻找校医': case '寻找出口':
+        // Auto-set NPC based on scene
+        const sceneNpcMap: Record<string, string> = {
+          shrine: 'kitsune_miko',
+          hospital: 'vampire_doctor',
+          school: 'werewolf_detective',
+          alley_night: 'succubus_bartender',
+          town_center: 'alraune_florist',
+          home_bedroom: 'kitsune_miko',
+        };
+        const npcTarget = sceneNpcMap[currentScene] ?? 'kitsune_miko';
+        dispatch({ type: 'SET_FLAG', payload: { key: '_dialogue_npc', value: npcTarget } });
         dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: 'dialogue' } });
         break;
 
