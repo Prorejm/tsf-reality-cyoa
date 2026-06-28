@@ -113,6 +113,31 @@ function AppShell() {
     }
   }, [state.erosionLevel, screen, badEndTriggered, dispatch]);
 
+  // Day auto-event engine — triggers on day change
+  const [prevDay, setPrevDay] = useState(state.currentDay);
+  useEffect(() => {
+    if (screen !== 'exploration') return;
+    if (state.currentDay !== prevDay) {
+      setPrevDay(state.currentDay);
+
+      // Chapter auto-progression: D1→D2→...→D7 scene unlock
+      const CHAPTER_SCENES: Record<number, string> = {
+        2: 'town_center', 3: 'shrine', 4: 'hospital',
+        5: 'school', 6: 'alley_night', 7: 'city_hall',
+      };
+      const targetScene = CHAPTER_SCENES[state.currentDay];
+      if (targetScene && state.currentScene !== targetScene) {
+        dispatch({ type: 'SET_SCENE', payload: targetScene });
+      }
+
+      // Day notification
+      dispatch({
+        type: 'SET_FLAG',
+        payload: { key: '_day_event', value: `第${state.currentDay}天开始了...` }
+      });
+    }
+  }, [state.currentDay, state.currentScene, screen, prevDay, dispatch]);
+
   // Ending auto-detection — when exploration screen, check conditions
   const [endingTriggered, setEndingTriggered] = useState(false);
   useEffect(() => {
