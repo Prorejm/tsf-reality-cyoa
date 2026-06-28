@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, lazy, Suspense, type FC } from 'react'
-import { GameProvider, useGame } from '@/game/engine/GameContext';
+import { useState, useEffect, useCallback, memo } from 'react'
+import { GameProvider, useGame } from '@/game/engine/GameContext'
 
-// Direct imports for type safety (code-split via manual chunks)
 import TitleScreen from '@/screens/TitleScreen'
 import ExplorationScreen from '@/screens/ExplorationScreen'
 import DialogueScreen from '@/screens/DialogueScreen'
@@ -19,12 +18,24 @@ import { DayTransition } from '@/components/DayTransition'
 import { RealityBreak } from '@/components/RealityBreak'
 import { PerceptionToggle } from '@/components/PerceptionToggle'
 
-type ScreenId =
+export type ScreenId =
   | 'title' | 'exploration' | 'dialogue' | 'observation' | 'puzzle'
   | 'journal' | 'inventory' | 'calendar' | 'map' | 'affinity' | 'ending' | 'phone'
 
-// ===== 游戏路由 =====
-function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: ScreenId) => void }) {
+// Maps GameAction SET_FLAG _screen values to ScreenId
+function detectScreenFromFlags(flags: Record<string, any>): ScreenId | null {
+  const target = flags['_screen']
+  if (!target || typeof target !== 'string') return null
+  
+  const validScreens: ScreenId[] = [
+    'title', 'exploration', 'dialogue', 'observation', 'puzzle',
+    'journal', 'inventory', 'calendar', 'map', 'affinity', 'ending', 'phone'
+  ]
+  return validScreens.includes(target as ScreenId) ? (target as ScreenId) : null
+}
+
+// ===== 游戏路由（缓存优化） =====
+const GameRouter = memo(function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: ScreenId) => void }) {
   switch (screen) {
     case 'title': return <TitleScreen onNavigate={onNavigate} />
     case 'exploration': return <ExplorationScreen onNavigate={onNavigate} />
@@ -40,22 +51,46 @@ function GameRouter({ screen, onNavigate }: { screen: ScreenId; onNavigate: (s: 
     case 'phone': return <PhoneScreen onClose={() => onNavigate('exploration')} />
     default: return <TitleScreen onNavigate={onNavigate} />
   }
-}
+})
 
 // ===== 主外壳 =====
 function AppShell() {
-  const { state } = useGame()
+  const { state, dispatch } = useGame()
   const [screen, setScreen] = useState<ScreenId>('title')
-  const navigate = useCallback((target: ScreenId) => setScreen(target), [])
+  const [prevScreen, setPrevScreen] = useState<ScreenId | null>(null)
 
+  // === 双重导航系统 ===
+  // 1. 直接回调 (onNavigate) — 用于 TitleScreen → Exploration
+  const navigate = useCallback((target: ScreenId) => {
+    setPrevScreen(screen)
+    setScreen(target)
+  }, [screen])
+
+  // 2. 状态驱动导航 — 监听 state.flags._screen (用于其他屏幕)
+  useEffect(() => {
+    const newScreen = detectScreenFromFlags(state.flags)
+    if (newScreen && newScreen !== screen) {
+      setPrevScreen(screen)
+      setScreen(newScreen)
+      // Reset the flag to prevent re-triggering
+      dispatch({ type: 'SET_FLAG', payload: { key: '_screen', value: undefined } })
+    }
+  }, [state.flags, screen, dispatch])
+
+  // Day transition
   const [dayTrans, setDayTrans] = useState<{ active: boolean; day: number }>({ active: false, day: 0 })
-  const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({ active: false, intensity: 'mild' })
 
   useEffect(() => {
     if (state.currentDay > 0 && screen === 'exploration' && state.currentPeriod === 'morning') {
-      setDayTrans({ active: true, day: state.currentDay })
+      const prev = prevScreen === 'exploration' ? null : prevScreen
+      if (prev || state.currentDay > 1) {
+        setDayTrans({ active: true, day: state.currentDay })
+      }
     }
-  }, [state.currentDay, state.currentPeriod, screen])
+  }, [state.currentDay, state.currentPeriod, screen, prevScreen])
+
+  // Reality break
+  const [realityBreak, setRealityBreak] = useState<{ active: boolean; intensity: 'mild' | 'moderate' | 'severe' }>({ active: false, intensity: 'mild' })
 
   useEffect(() => {
     if (state.erosionLevel >= 80 && screen === 'exploration') {
@@ -73,7 +108,10 @@ function AppShell() {
         <DayTransition day={dayTrans.day} onComplete={() => setDayTrans({ active: false, day: 0 })} />
       )}
       {realityBreak.active && (
-        <RealityBreak intensity={realityBreak.intensity} onComplete={() => setRealityBreak({ active: false, intensity: 'mild' })} />
+        <RealityBreak
+          intensity={realityBreak.intensity}
+          onComplete={() => setRealityBreak({ active: false, intensity: 'mild' })}
+        />
       )}
     </div>
   )

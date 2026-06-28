@@ -358,13 +358,79 @@ export type GameAction =
   | { type: 'SWITCH_PERCEPTION' }
   | { type: string; payload?: any };
 
-/** Game config */
+/** Engine config */
 export interface GameConfig {
   totalDays?: number;
   startingScene?: string;
   maxInventorySize?: number;
   initialFlags?: Record<string, boolean | number | string>;
 }
+
+// ===== MISSING TYPES (added for engine compatibility) =====
+
+export interface ItemEffect {
+  target: string;
+  type: string;
+  value: number;
+}
+
+export interface ErosionStage {
+  id: string;
+  name: string;
+  threshold: number;
+  effects: string[];
+  narrative?: string;
+}
+
+export interface ErosionTrigger {
+  condition: string;
+  amount: number;
+  description?: string;
+}
+
+export interface ClueConnectionNode {
+  clueId: string;
+  connections: string[];
+  strength: number;
+}
+
+export interface ClueConnectionEdge {
+  from: string;
+  to: string;
+  relation: string;
+}
+
+export interface ClueConnectionGraph {
+  nodes: ClueConnectionNode[];
+  edges: ClueConnectionEdge[];
+}
+
+// Make InventoryItem more compatible by extending with optional fields
+export interface InventoryItemExtended extends InventoryItem {
+  category?: string;
+  stackable?: boolean;
+  rarity?: 'common' | 'uncommon' | 'rare' | 'unique';
+  droppable?: boolean;
+  equippable?: boolean;
+  useFeedback?: string;
+  triggerConfig?: Record<string, any>;
+  consumeOnUse?: boolean;
+  effects?: ItemEffect[];
+  equipSlot?: string;
+  useable?: boolean;  // alias for usable
+}
+
+export type ScheduleEntry = EngineScheduleEntry & {
+  completed?: boolean;
+  prerequisites?: string[];
+  importance?: 'low' | 'medium' | 'high';
+  title?: string;
+  missedErosionPenalty?: number;
+  missedAwarenessPenalty?: number;
+  location?: string;
+  npcId?: string;
+  timeRange?: { start: string; end: string };
+};
 
 /**
  * ─── GameState — Flat structure (engine-compatible) ─────────────────
