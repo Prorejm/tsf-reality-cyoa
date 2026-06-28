@@ -16,10 +16,10 @@ interface PointOfInterest {
 const ObservationScreen: React.FC = () => {
   const { state, dispatch } = useGame();
 
-  const awareness = state?.cognition?.realityAwareness ?? 0;
-  const perceptionMode = (state as any)?.perceptionMode ?? 'resident';
-  const currentScene = state?.zone?.currentScene ?? 'unknown';
-  const day = state?.time?.day ?? 1;
+  const awareness = state.awarenessLevel ?? 0;
+  const perceptionMode = state.perceptionMode ?? 'resident';
+  const currentScene = state.currentScene ?? 'home_bedroom';
+  const day = state.currentDay ?? 1;
 
   const [pointsOfInterest] = useState<PointOfInterest[]>([
     {

@@ -131,9 +131,9 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ onClose }) => {
   const [selectedBestiary, setSelectedBestiary] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageData[]>(DEFAULT_MESSAGES);
 
-  const currentDay = state?.time?.day ?? state?.currentDay ?? 1;
-  const currentPeriod = state?.time?.period ?? state?.currentPeriod ?? 'morning';
-  const currentScene = state?.zone?.currentScene ?? state?.currentScene ?? 'home_bedroom';
+  const currentDay = state.currentDay ?? 1;
+  const currentPeriod = state.currentPeriod ?? 'morning';
+  const currentScene = state.currentScene ?? 'home_bedroom';
 
   // ── 时段中文映射 ──────────────────────────────────────────────────
   const periodCN: Record<string, string> = {
