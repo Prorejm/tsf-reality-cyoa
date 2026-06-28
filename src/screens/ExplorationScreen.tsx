@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useGame, useAdvanceTime } from '@/game/engine/GameContext';
 import type { NpcId } from '@/game/engine/types';
 import { cn } from '@/lib/utils';
+import { useCYOA } from '@/game/hooks/useCYOA';
+import cyoaNetwork from '@/game/data/cyoaData';
 
 interface Hotspot {
   id: string;
@@ -68,6 +70,7 @@ const QUEST_HINTS: QuestHint[] = [
 const ExplorationScreen: React.FC = () => {
   const { state, dispatch } = useGame();
   const advanceTime = useAdvanceTime();
+  const cyoa = useCYOA(cyoaNetwork);
   
   // === Flat state access (compatible with engine) ===
   const day = state.currentDay ?? 1;
@@ -82,6 +85,7 @@ const ExplorationScreen: React.FC = () => {
   const [showActions, setShowActions] = useState(false);
   const [notifications, setNotifications] = useState<GameNotification[]>([]);
   const [selectedHotspotIndex, setSelectedHotspotIndex] = useState<number | null>(null);
+  const [showChoiceResult, setShowChoiceResult] = useState<string | null>(null);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
@@ -364,17 +368,72 @@ const ExplorationScreen: React.FC = () => {
             <h2 className="text-sm font-bold text-purple-200 tracking-wider">
               {currentScene.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </h2>
+            {cyoa.currentNode && (
+              <span className="text-[9px] text-purple-300/40 ml-auto tracking-wider">
+                {cyoa.completedNodes.length}/{cyoaNetwork.startNodeId ? Object.keys(cyoaNetwork.nodes).length : 36}
+              </span>
+            )}
           </div>
           
-          {/* Typewriter narrative text */}
-          <p className="text-sm text-gray-300 leading-relaxed">
-            {displayedText}
-            {!showActions && <span className="animate-pulse text-purple-400">▌</span>}
-          </p>
+          {/* CYOA narrative (if active) */}
+          {cyoa.currentNode ? (
+            <div>
+              <p className="text-[11px] font-bold text-amber-300/80 mb-1 tracking-wider">◆ {cyoa.currentNode.title}</p>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {displayedText || (perceptionMode === 'truth' && cyoa.currentNode.truthNarrative ? cyoa.currentNode.truthNarrative : cyoa.currentNode.narrative)}
+                {!showActions && <span className="animate-pulse text-purple-400">▌</span>}
+              </p>
+            </div>
+          ) : (
+            /* Typewriter narrative text */
+            <p className="text-sm text-gray-300 leading-relaxed">
+              {displayedText}
+              {!showActions && <span className="animate-pulse text-purple-400">▌</span>}
+            </p>
+          )}
         </div>
 
+        {/* CYOA Choices */}
+        {showActions && cyoa.currentNode && cyoa.currentChoices.length > 0 && !showChoiceResult && (
+          <div className="mb-3">
+            <p className="text-[10px] text-gray-500 tracking-wider mb-1.5">▸ 你的选择</p>
+            <div className="flex flex-col gap-1.5">
+              {cyoa.currentChoices.map((choice, i) => (
+                <button
+                  key={choice.id}
+                  onClick={() => {
+                    setShowChoiceResult(choice.resultText);
+                    cyoa.makeChoice(choice.id);
+                    setTimeout(() => setShowChoiceResult(null), 2500);
+                  }}
+                  className={cn(
+                    'w-full text-left px-3 py-2.5 rounded-lg text-xs font-game tracking-wider transition-all',
+                    'border border-white/10 bg-white/5 hover:bg-white/10 hover:border-amber-400/30 text-gray-200 hover:text-amber-200',
+                  )}
+                >
+                  <span className="mr-2 text-amber-400/60">{(i+1).toString()}</span>
+                  {choice.text}
+                  {choice.effects.erosion && choice.effects.erosion > 0 && (
+                    <span className="ml-1.5 text-[9px] text-pink-400/60">[侵蚀+{choice.effects.erosion}]</span>
+                  )}
+                  {choice.effects.awareness && choice.effects.awareness > 0 && (
+                    <span className="ml-1.5 text-[9px] text-blue-400/60">[认知+{choice.effects.awareness}]</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Choice Result Feedback */}
+        {showChoiceResult && (
+          <div className="mb-3 p-3 rounded-lg bg-amber-500/10 border border-amber-400/20 animate-slide-in">
+            <p className="text-xs text-amber-200/90">{showChoiceResult}</p>
+          </div>
+        )}
+
         {/* Hotspots */}
-        {showActions && hotspots.length > 0 && (
+        {showActions && !cyoa.currentNode && hotspots.length > 0 && (
           <div className="mb-3">
             <p className="text-[10px] text-gray-500 tracking-wider mb-1.5">▸ 值得留意的细节</p>
             <div className="flex flex-wrap gap-1.5">
@@ -398,7 +457,8 @@ const ExplorationScreen: React.FC = () => {
       </div>
 
       {/* Scene-specific actions (when typing done) */}
-      {showActions && (
+      {/* Scene-specific actions (when CYOA not active) */}
+      {showActions && !cyoa.currentNode && (
         <div className="px-4 pb-20">
           <p className="text-[10px] text-gray-500 tracking-wider mb-2">▸ 行動</p>
           <div className="grid grid-cols-2 gap-1.5">
