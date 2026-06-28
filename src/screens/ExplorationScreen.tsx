@@ -101,6 +101,42 @@ const ExplorationScreen: React.FC = () => {
   const [showTransformation, setShowTransformation] = useState(false);
   const [showMissionTracker, setShowMissionTracker] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [prevDayRef] = useState({ current: day });
+
+  // Auto-trigger CYOA node when entering a fresh scene on a new day
+  useEffect(() => {
+    if (day !== prevDayRef.current && showActions && !cyoa.currentNode) {
+      prevDayRef.current = day;
+      // Check if there's a matching CYOA node for this day
+      const available = cyoa.currentNodes;
+      if (available.length > 0) {
+        const firstNode = available[0];
+        dispatch({ type: 'SET_FLAG', payload: { key: 'cyoaCurrentNode', value: firstNode.id } });
+        addNotification(`📖 新的线索出现: ${firstNode.title}`, 'system');
+      }
+    }
+  }, [day, showActions, cyoa.currentNode, cyoa.currentNodes, dispatch, addNotification]);
+
+  // Auto-trigger scene-specific CYOA when scene changes
+  const prevSceneRef = useRef(currentScene);
+  useEffect(() => {
+    if (currentScene !== prevSceneRef.current && showActions && !cyoa.currentNode) {
+      prevSceneRef.current = currentScene;
+      const sceneNodeMap: Record<string, string> = {
+        town_center: 'town_arrival',
+        shrine: 'shrine_arrival',
+        hospital: 'hospital_arrival',
+        school: 'school_arrival',
+        alley_night: 'alley_arrival',
+        city_hall: 'truth_city_hall_infil',
+      };
+      const targetNode = sceneNodeMap[currentScene];
+      if (targetNode && !cyoa.completedNodes.includes(targetNode)) {
+        dispatch({ type: 'SET_FLAG', payload: { key: 'cyoaCurrentNode', value: targetNode } });
+        addNotification('这里似乎有什么值得调查的…', 'info');
+      }
+    }
+  }, [currentScene, showActions, cyoa.currentNode, cyoa.completedNodes, dispatch, addNotification]);
 
   // Get scene description
   const sceneDescription = useMemo(() => {
